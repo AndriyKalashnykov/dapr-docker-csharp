@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+services:
+  ## QueueProcessor
+  queueprocessor:
+    image: mcr.microsoft.com/dotnet/sdk:9.0
+    command: ["dotnet", "watch", "run", "--no-hot-reload"]
+    working_dir: /app
+    volumes:
+      - ./src/Dapr.Demo.QueueProcessor:/app
+    environment:
+      ASPNETCORE_URLS: http://*:5000
+      ASPNETCORE_ENVIRONMENT: Development
+    ports:
+      - 5000:5000
+    depends_on:
+      - redis
+    networks:
+      - dapr-demo-network
+  queueprocessor-dapr:
+    image: daprio/daprd:1.15.11
+    command: ["./daprd",
+     "--app-id", "queueprocessor",
+     "--app-port", "5000",
+     "--resources-path", "/components",
+     "--config", "/configuration/configuration.yaml"]
+    volumes:
+      - ./compose/configuration/:/configuration
+      - ./compose/components/:/components
+    network_mode: service:queueprocessor
+
+  redis:
+    image: redis:8
+    ports:
+      - 6379:6379
+    networks:
+      - dapr-demo-network
+
+networks:
+  dapr-demo-network:

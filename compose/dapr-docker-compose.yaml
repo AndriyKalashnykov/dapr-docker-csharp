@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+services:
+  dapr-dashboard:
+    image: daprio/dashboard:0.15.0
+    command: [ "--docker-compose=true",
+      "--components-path=/home/nonroot/components",
+      "--config-path=/home/nonroot/configuration",
+      "--docker-compose-path=/home/nonroot/docker-compose.yaml" ]
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./compose/components/:/home/nonroot/components"
+      - "./compose/configuration/:/home/nonroot/configuration"
+      - ./docker-compose.yaml:/home/nonroot/docker-compose.yaml
+    networks:
+      - dapr-demo-network
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.73.0
+    ports:
+      - 16686:16686
+      - 4317:4317 # OtlpgRPC
+      - 4318:4318 # OtlpHttp
+    environment:
+      COLLECTOR_OTLP_ENABLED: true
+

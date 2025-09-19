@@ -1,0 +1,14 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "queueprocessor docker attach",
+			"type": "docker",
+			"request": "attach",
+			"netCore": {
+				"appProject": "${workspaceFolder}/src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
+			},
+			"containerName": "daprdemo-queueprocessor-1"
+		}
+	]
+}
