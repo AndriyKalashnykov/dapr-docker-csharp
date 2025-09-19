@@ -23,7 +23,7 @@ jobs:
         id: sdk
         shell: bash
         run: |
-          tfm=$(grep -oP '(?<=<TargetFramework>)net[0-9.]+(?=</TargetFramework>)' "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj" || true)
+          tfm=$(grep -oP '(?<=<TargetFramework>)net[0-9.]+(?=</TargetFramework>)' src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj || true)
           if [[ -z "$tfm" ]]; then
             echo "Failed to read <TargetFramework> from src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
             exit 1
