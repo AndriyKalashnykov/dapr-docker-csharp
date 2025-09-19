@@ -6,6 +6,10 @@ PAYLOAD:=3
 define EVENT_PAYLOAD
 endef
 
+build:
+	dotnet restore "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
+	dotnet build "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
+
 start:
 	$(DOCKER_COMPOSE) up -d
 
