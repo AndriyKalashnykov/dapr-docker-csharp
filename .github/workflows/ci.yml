@@ -19,13 +19,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine .NET SDK from "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
+      - name: Determine .NET SDK from "src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
         id: sdk
         shell: bash
         run: |
-          tfm=$(grep -oP '(?<=<TargetFramework>)net[0-9.]+(?=</TargetFramework>)' src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj || true)
+          tfm=$(grep -oP '(?<=<TargetFramework>)net[0-9.]+(?=</TargetFramework>)' src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj || true)
           if [[ -z "$tfm" ]]; then
-            echo "Failed to read <TargetFramework> from src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
+            echo "Failed to read <TargetFramework> from src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
             exit 1
           fi
           ver="${tfm#net}" # e.g., net9.0 -> 9.0
