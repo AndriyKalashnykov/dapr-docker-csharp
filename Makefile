@@ -7,8 +7,8 @@ define EVENT_PAYLOAD
 endef
 
 build:
-	dotnet restore "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
-	dotnet build "src\Dapr.Demo.QueueProcessor\Dapr.Demo.QueueProcessor.csproj"
+	dotnet restore "src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
+	dotnet build "src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj" -c Release --no-restore
 
 start:
 	$(DOCKER_COMPOSE) up -d
