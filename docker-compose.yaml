@@ -17,7 +17,7 @@ services:
     networks:
       - dapr-demo-network
   queueprocessor-dapr:
-    image: daprio/daprd:1.15.11
+    image: daprio/daprd:1.16.0
     command: ["./daprd",
      "--app-id", "queueprocessor",
      "--app-port", "5000",
