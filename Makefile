@@ -10,6 +10,9 @@ build:
 	dotnet restore "src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
 	dotnet build "src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj" -c Release --no-restore
 
+update: build
+	@cd "src/Dapr.Demo.QueueProcessor" && dotnet list package --outdated | grep -o '> \S*' | grep '[^> ]*' -o | xargs --no-run-if-empty -L 1 dotnet add package
+
 start:
 	$(DOCKER_COMPOSE) up -d
 
