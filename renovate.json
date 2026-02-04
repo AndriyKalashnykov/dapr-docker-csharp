@@ -62,5 +62,13 @@
   "prHourlyLimit": 0,
   "dependencyDashboard": true,
   "gitAuthor": "Renovate Bot <bot@renovateapp.com>",
-  "platformAutomerge": true
+  "platformAutomerge": true,
+  "automerge": true,
+   "automergeType": "squash",
+   "vulnerabilityAlerts": {
+     "labels": ["security"],
+     "automerge": true
+   },
+   "timezone": "America/New_York",
+   "commitMessagePrefix": "[renovate]"
 }
