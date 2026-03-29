@@ -63,3 +63,16 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main and PR
 3. Test (`make test`)
 
 Permissions: `contents: read` (minimal).
+
+## Skills
+
+Use the following skills when working on related files:
+
+| File(s) | Skill |
+|---------|-------|
+| `Makefile` | `/makefile` |
+| `renovate.json` | `/renovate` |
+| `README.md` | `/readme` |
+| `.github/workflows/*.yml` | `/ci-workflow` |
+
+When spawning subagents, always pass conventions from the respective skill into the agent's prompt.
