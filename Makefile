@@ -5,6 +5,7 @@ CURRENTTAG     := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "de
 
 # === Tool Versions (pinned) ===
 ACT_VERSION    := 0.2.86
+NVM_VERSION    := 0.40.4
 
 # === Project Paths ===
 SOLUTION       := dapr-docker-csharp.sln
@@ -71,6 +72,20 @@ ci: deps build lint test
 ci-run: deps-act
 	@act push --container-architecture linux/amd64
 
+#renovate-bootstrap: @ Install nvm and npm for Renovate
+renovate-bootstrap:
+	@command -v node >/dev/null 2>&1 || { \
+		echo "Installing nvm $(NVM_VERSION)..."; \
+		curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v$(NVM_VERSION)/install.sh | bash; \
+		export NVM_DIR="$$HOME/.nvm"; \
+		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
+		nvm install --lts; \
+	}
+
+#renovate-validate: @ Validate Renovate configuration
+renovate-validate: renovate-bootstrap
+	@npx --yes renovate --platform=local
+
 #start: @ Start Docker Compose services
 start: deps
 	@$(DOCKER_COMPOSE) up -d
@@ -131,6 +146,7 @@ release:
 		echo "Done."'
 
 .PHONY: help deps deps-act clean build test lint format update run ci ci-run \
+	renovate-bootstrap renovate-validate \
 	start stop restart pull \
 	dapr-logs dapr-pub dapr-counter dapr-get \
 	redis-pending redis-clear redis-monitor \
