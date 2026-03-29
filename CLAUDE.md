@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Dapr .NET demo application — a queue processor using Dapr pub/sub with Redis, running via Docker Compose.
+Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, running via Docker Compose.
 
 - **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.201`)
 - **Framework**: ASP.NET Core with Dapr.AspNetCore
@@ -23,6 +23,7 @@ Dapr .NET demo application — a queue processor using Dapr pub/sub with Redis, 
 | `make run` | Run application locally |
 | `make ci` | Full local CI pipeline (build + lint + test) |
 | `make ci-run` | Run GitHub Actions locally via act |
+| `make release` | Create and push a new tag |
 
 ## Docker Compose Commands
 
@@ -50,6 +51,15 @@ Dapr .NET demo application — a queue processor using Dapr pub/sub with Redis, 
 | `make redis-clear` | Clear Redis stream |
 | `make redis-monitor` | Monitor Redis commands |
 
+## Utility Commands
+
+| Command | Purpose |
+|---------|---------|
+| `make deps` | Install required tools (idempotent) |
+| `make deps-act` | Install act for local CI runs |
+| `make renovate-bootstrap` | Install nvm and npm for Renovate |
+| `make renovate-validate` | Validate Renovate configuration |
+
 ## Tool Versions
 
 - **act**: 0.2.86 (installed by `make deps-act` / `make ci-run`)
@@ -57,12 +67,14 @@ Dapr .NET demo application — a queue processor using Dapr pub/sub with Redis, 
 
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main and PRs:
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags `v*`, and PRs:
 1. Build (`make build`)
-2. Lint (`make lint` — `dotnet format --verify-no-changes`)
+2. Lint (`make lint` -- `dotnet format --verify-no-changes`)
 3. Test (`make test`)
 
 Permissions: `contents: read` (minimal).
+
+A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) removes old runs weekly.
 
 ## Skills
 
