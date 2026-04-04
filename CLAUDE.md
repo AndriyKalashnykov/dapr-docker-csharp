@@ -62,7 +62,7 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 
 ## Tool Versions
 
-- **act**: 0.2.86 (installed by `make deps-act` / `make ci-run`)
+- **act**: 0.2.87 (installed by `make deps-act` / `make ci-run`)
 - **.NET SDK**: 10.0.201 (from `global.json`)
 
 ## CI
@@ -88,3 +88,11 @@ Use the following skills when working on related files:
 | `.github/workflows/*.yml` | `/ci-workflow` |
 
 When spawning subagents, always pass conventions from the respective skill into the agent's prompt.
+
+## Backlog
+
+- [ ] Add unit tests for QueueProcessor (currently no test project exists in the solution)
+- [ ] Pin `mcr.microsoft.com/dotnet/sdk:10.0` image in `docker-compose.yaml` with digest (runtime images already pinned)
+- [ ] Add health check endpoint and Docker HEALTHCHECK instruction
+- [ ] Consider adding `dependabot.yml` as secondary dependency updater or remove in favor of Renovate-only
+- [ ] Add `.editorconfig` for consistent formatting rules across editors

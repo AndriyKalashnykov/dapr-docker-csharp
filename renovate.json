@@ -17,10 +17,10 @@
   "automergeType": "branch",
   "automergeStrategy": "squash",
   "ignoreTests": false,
-  "enabledManagers": [
-    "github-actions",
-    "nuget",
-    "docker-compose"
+  "enabledCategories": [
+    "ci",
+    "dotnet",
+    "docker"
   ],
   "vulnerabilityAlerts": {
     "labels": [
@@ -39,8 +39,8 @@
     },
     {
       "description": "Group GitHub Actions into one PR",
-      "matchManagers": [
-        "github-actions"
+      "matchCategories": [
+        "ci"
       ],
       "groupName": "GitHub Actions"
     },

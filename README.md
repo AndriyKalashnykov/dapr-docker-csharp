@@ -26,7 +26,7 @@ make dapr-pub   # publish a test message
 | [Docker](https://www.docker.com/) | latest | Container runtime with Compose v2 |
 | [jq](https://jqlang.github.io/jq/) | latest | API response formatting |
 | [redis-cli](https://redis.io/docs/getting-started/) | latest | Redis debugging (optional) |
-| [act](https://github.com/nektos/act) | 0.2.86 | Run GitHub Actions locally (optional, installed by `make deps-act`) |
+| [act](https://github.com/nektos/act) | 0.2.87 | Run GitHub Actions locally (optional, installed by `make deps-act`) |
 
 Install all required dependencies:
 
