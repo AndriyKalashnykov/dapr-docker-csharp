@@ -18,12 +18,13 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 | `make help` | List all available targets |
 | `make build` | Restore + build in Release mode |
 | `make test` | Run TUnit tests via `dotnet run` |
-| `make lint` | Check code formatting (`dotnet format --verify-no-changes`) |
+| `make lint` | Check formatting and build warnings (`dotnet format` + `dotnet build -warnaserror`) |
+| `make vulncheck` | Check for vulnerable NuGet packages (direct + transitive) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts (bin/obj) |
 | `make update` | Update NuGet packages to latest |
 | `make run` | Run application locally |
-| `make ci` | Full local CI pipeline (format + lint + test + build) |
+| `make ci` | Full local CI pipeline (format + lint + vulncheck + test + build) |
 | `make ci-run` | Run GitHub Actions locally via act |
 | `make release` | Create and push a new tag |
 
@@ -80,7 +81,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 
 | Job | Depends on | Step |
 |-----|-----------|------|
-| **lint** | — | `make lint` (`dotnet format --verify-no-changes`) |
+| **lint** | — | `make lint` (format + warnaserror) then `make vulncheck` |
 | **build** | lint | `make build` |
 | **test** | lint | `make test` |
 

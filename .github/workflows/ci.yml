@@ -32,6 +32,9 @@ jobs:
       - name: Lint
         run: make lint
 
+      - name: Vulnerability check
+        run: make vulncheck
+
   build:
     needs: [lint]
     runs-on: ubuntu-latest

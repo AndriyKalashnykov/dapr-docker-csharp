@@ -44,8 +44,9 @@ Run `make help` to see all targets.
 | Target | Description |
 |--------|-------------|
 | `make build` | Build the solution |
-| `make test` | Run TUnit tests |
+| `make test` | Run tests |
 | `make lint` | Check code formatting |
+| `make vulncheck` | Check for vulnerable NuGet packages |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts |
 | `make run` | Run the application locally |
@@ -103,11 +104,11 @@ Docker Compose files:
 
 ## CI/CD
 
-GitHub Actions runs on every push to `main`, tags `v*`, and pull requests.
+GitHub Actions runs on every push to `main`, tags `v*`, pull requests, and `workflow_call`.
 
 | Job | Triggers | Steps |
 |-----|----------|-------|
-| **lint** | push, PR, tags | Lint (format check) |
+| **lint** | push, PR, tags | Lint, Vulnerability check |
 | **build** | after lint passes | Build |
 | **test** | after lint passes | Test |
 

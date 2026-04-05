@@ -43,8 +43,8 @@ clean:
 
 #build: @ Build the solution
 build: deps
-	@dotnet restore "$(PROJECT)"
-	@dotnet build "$(PROJECT)" -c Release --no-restore
+	@dotnet restore "$(SOLUTION)"
+	@dotnet build "$(SOLUTION)" -c Release --no-restore
 
 # === Test Projects ===
 TEST_PROJECT   := tests/queue-processor.tests/queue-processor.tests.csproj
@@ -53,24 +53,29 @@ TEST_PROJECT   := tests/queue-processor.tests/queue-processor.tests.csproj
 test: deps
 	@dotnet run --project "$(TEST_PROJECT)" -c Release
 
-#lint: @ Check code formatting
+#lint: @ Check formatting and build warnings
 lint: deps
 	@dotnet format "$(SOLUTION)" --verify-no-changes
+	@dotnet build "$(SOLUTION)" -c Release -warnaserror --nologo -v q
+
+#vulncheck: @ Check for vulnerable NuGet packages
+vulncheck: deps
+	@dotnet list package --vulnerable --include-transitive 2>&1 | tee /dev/stderr | grep -q 'has the following vulnerable packages' && exit 1 || true
 
 #format: @ Auto-fix code formatting
 format: deps
 	@dotnet format "$(SOLUTION)"
 
 #update: @ Update NuGet packages to latest versions
-update: build
-	@cd "src/Dapr.Demo.QueueProcessor" && dotnet list package --outdated | grep -o '> \S*' | grep '[^> ]*' -o | xargs --no-run-if-empty -L 1 dotnet add package
+update: deps
+	@cd "src/queue-processor" && dotnet list package --outdated | grep -o '> \S*' | grep '[^> ]*' -o | xargs --no-run-if-empty -L 1 dotnet add package
 
 #run: @ Run the application locally
 run: deps
 	@dotnet run --project "$(PROJECT)"
 
 #ci: @ Run full local CI pipeline
-ci: deps format lint test build
+ci: deps format lint vulncheck test build
 	@echo "Local CI pipeline passed."
 
 #ci-run: @ Run GitHub Actions workflow locally using act
@@ -157,7 +162,7 @@ release:
 		git push && \
 		echo "Done."'
 
-.PHONY: help deps deps-act clean build test lint format update run ci ci-run \
+.PHONY: help deps deps-act clean build test lint vulncheck format update run ci ci-run \
 	renovate-bootstrap renovate-validate \
 	start stop restart pull \
 	dapr-logs dapr-pub dapr-counter dapr-get \
