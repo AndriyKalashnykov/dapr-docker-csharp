@@ -17,10 +17,12 @@
   "automergeType": "branch",
   "automergeStrategy": "squash",
   "ignoreTests": false,
-  "enabledCategories": [
-    "ci",
-    "dotnet",
-    "docker"
+  "enabledManagers": [
+    "github-actions",
+    "nuget",
+    "docker-compose",
+    "dotnet-sdk",
+    "regex"
   ],
   "vulnerabilityAlerts": {
     "labels": [
@@ -29,6 +31,41 @@
     "automerge": true,
     "minimumReleaseAge": "0 days"
   },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track act version in Makefile",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "ACT_VERSION\\s*:=\\s*(?<currentValue>.*?)\\n"
+      ],
+      "depNameTemplate": "nektos/act",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Track nvm version in Makefile",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "NVM_VERSION\\s*:=\\s*(?<currentValue>.*?)\\n"
+      ],
+      "depNameTemplate": "nvm-sh/nvm",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.*)$"
+    },
+    {
+      "customType": "regex",
+      "description": "Track Node.js major version in Makefile",
+      "managerFilePatterns": ["/^Makefile$/"],
+      "matchStrings": [
+        "NODE_VERSION\\s*:=\\s*(?<currentValue>\\d+)\\n"
+      ],
+      "depNameTemplate": "node",
+      "datasourceTemplate": "node-version",
+      "versioningTemplate": "node"
+    }
+  ],
   "packageRules": [
     {
       "description": "Wait 3 days before automerging major updates",
@@ -39,13 +76,13 @@
     },
     {
       "description": "Group GitHub Actions into one PR",
-      "matchCategories": [
-        "ci"
+      "matchManagers": [
+        "github-actions"
       ],
       "groupName": "GitHub Actions"
     },
     {
-      "description": "Group .NET Docker images, disable major updates",
+      "description": "Group .NET Docker images",
       "groupName": "Dotnet Docker images",
       "matchPackageNames": [
         "dotnet-sdk",
@@ -53,10 +90,6 @@
         "mcr.microsoft.com/dotnet/sdk",
         "mcr.microsoft.com/dotnet/runtime",
         "mcr.microsoft.com/dotnet/runtime-deps"
-      ],
-      "extends": [
-        ":disableMajorUpdates",
-        ":pinDigestsDisabled"
       ]
     },
     {
@@ -72,6 +105,13 @@
       "matchPackageNames": [
         "/^daprio\\//"
       ]
+    },
+    {
+      "description": "Group Makefile tool versions",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "groupName": "Makefile tools"
     }
   ]
 }

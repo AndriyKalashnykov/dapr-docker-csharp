@@ -6,10 +6,11 @@ CURRENTTAG     := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "de
 # === Tool Versions (pinned) ===
 ACT_VERSION    := 0.2.87
 NVM_VERSION    := 0.40.4
+NODE_VERSION   := 22
 
 # === Project Paths ===
-SOLUTION       := dapr-docker-csharp.sln
-PROJECT        := src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj
+SOLUTION       := dapr-docker-csharp.slnx
+PROJECT        := src/queue-processor/queue-processor.csproj
 
 # === Docker Compose ===
 DOCKER_COMPOSE := docker compose --file docker-compose.yaml --file compose/dapr-docker-compose.yaml
@@ -45,9 +46,12 @@ build: deps
 	@dotnet restore "$(PROJECT)"
 	@dotnet build "$(PROJECT)" -c Release --no-restore
 
+# === Test Projects ===
+TEST_PROJECT   := tests/queue-processor.tests/queue-processor.tests.csproj
+
 #test: @ Run tests
 test: deps
-	@dotnet test "$(SOLUTION)" -c Release --nologo -v q
+	@dotnet run --project "$(TEST_PROJECT)" -c Release
 
 #lint: @ Check code formatting
 lint: deps
@@ -66,12 +70,13 @@ run: deps
 	@dotnet run --project "$(PROJECT)"
 
 #ci: @ Run full local CI pipeline
-ci: deps build lint test
+ci: deps format lint test build
 	@echo "Local CI pipeline passed."
 
 #ci-run: @ Run GitHub Actions workflow locally using act
 ci-run: deps-act
-	@act push --container-architecture linux/amd64
+	@act push --container-architecture linux/amd64 \
+		--artifact-server-path /tmp/act-artifacts
 
 #renovate-bootstrap: @ Install nvm and npm for Renovate
 renovate-bootstrap:
@@ -80,26 +85,32 @@ renovate-bootstrap:
 		curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v$(NVM_VERSION)/install.sh | bash; \
 		export NVM_DIR="$$HOME/.nvm"; \
 		[ -s "$$NVM_DIR/nvm.sh" ] && . "$$NVM_DIR/nvm.sh"; \
-		nvm install --lts; \
+		nvm install $(NODE_VERSION); \
 	}
+	@command -v pnpm >/dev/null 2>&1 || { echo "Installing pnpm via corepack..."; corepack enable pnpm; }
 
 #renovate-validate: @ Validate Renovate configuration
 renovate-validate: renovate-bootstrap
-	@npx --yes renovate --platform=local
+	@if [ -n "$$GH_ACCESS_TOKEN" ]; then \
+		GITHUB_COM_TOKEN=$$GH_ACCESS_TOKEN npx --yes renovate --platform=local; \
+	else \
+		echo "Warning: GH_ACCESS_TOKEN not set, some dependency lookups may fail"; \
+		npx --yes renovate --platform=local; \
+	fi
 
 #start: @ Start Docker Compose services
 start: deps
 	@$(DOCKER_COMPOSE) up -d
 
 #stop: @ Stop Docker Compose services
-stop:
+stop: deps
 	@$(DOCKER_COMPOSE) rm --stop --force
 
 #restart: @ Restart Docker Compose services
 restart: stop start
 
 #pull: @ Pull latest Docker images
-pull:
+pull: deps
 	@$(DOCKER_COMPOSE) pull
 
 #dapr-logs: @ Follow queue processor logs
@@ -139,7 +150,7 @@ release:
 		echo "$$newtag" | grep -qE "^v[0-9]+\.[0-9]+\.[0-9]+$$" || { echo "Error: Tag must match vN.N.N"; exit 1; } && \
 		echo -n "Create and push $$newtag? [y/N] " && read ans && [ "$${ans:-N}" = y ] && \
 		echo $$newtag > ./version.txt && \
-		git add -A && \
+		git add version.txt && \
 		git commit -a -s -m "Cut $$newtag release" && \
 		git tag $$newtag && \
 		git push origin $$newtag && \

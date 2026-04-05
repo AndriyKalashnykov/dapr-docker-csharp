@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+        <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="TUnit" Version="1.28.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.5"/>
+        <PackageReference Include="NSubstitute" Version="5.3.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="../../src/queue-processor/queue-processor.csproj"/>
+    </ItemGroup>
+
+</Project>

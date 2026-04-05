@@ -32,3 +32,6 @@ app.MapPost("/counter", async ([FromBody] int counter, ILogger<Program> logger, 
 }).WithTopic("pubsub", "counter", false);
 
 app.Run();
+
+// Enable WebApplicationFactory<Program> in integration tests
+public partial class Program;

@@ -6,7 +6,7 @@
 			"type": "docker",
 			"request": "attach",
 			"netCore": {
-				"appProject": "${workspaceFolder}/src/Dapr.Demo.QueueProcessor/Dapr.Demo.QueueProcessor.csproj"
+				"appProject": "${workspaceFolder}/src/queue-processor/queue-processor.csproj"
 			},
 			"containerName": "daprdemo-queueprocessor-1"
 		}

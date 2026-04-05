@@ -5,7 +5,7 @@
 
 # dapr-docker-csharp
 
-Dapr .NET demo -- a queue processor using Dapr pub/sub with Redis, running via Docker Compose. Built with C# / .NET 10.0 and ASP.NET Core with Dapr.AspNetCore.
+Dapr .NET demo -- a queue processor using Dapr pub/sub with Redis, running via Docker Compose. Built with C# / .NET 10.0 and ASP.NET Core with Dapr.AspNetCore. Uses `.slnx` solution format and TUnit for testing.
 
 ## Quick Start
 
@@ -22,6 +22,7 @@ make dapr-pub   # publish a test message
 | Tool | Version | Purpose |
 |------|---------|---------|
 | [GNU Make](https://www.gnu.org/software/make/) | 3.81+ | Build orchestration |
+| [Git](https://git-scm.com/) | 2.0+ | Version control |
 | [.NET SDK](https://dotnet.microsoft.com/download) | 10.0 | C# runtime and compiler (pinned in `global.json`) |
 | [Docker](https://www.docker.com/) | latest | Container runtime with Compose v2 |
 | [jq](https://jqlang.github.io/jq/) | latest | API response formatting |
@@ -43,7 +44,7 @@ Run `make help` to see all targets.
 | Target | Description |
 |--------|-------------|
 | `make build` | Build the solution |
-| `make test` | Run tests |
+| `make test` | Run TUnit tests |
 | `make lint` | Check code formatting |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts |
@@ -80,6 +81,7 @@ Run `make help` to see all targets.
 
 | Target | Description |
 |--------|-------------|
+| `make help` | List available tasks |
 | `make ci` | Run full local CI pipeline |
 | `make ci-run` | Run GitHub Actions workflow locally using [act](https://github.com/nektos/act) |
 | `make deps` | Install required tools (idempotent) |
@@ -93,10 +95,11 @@ Run `make help` to see all targets.
 - **QueueProcessor** -- ASP.NET Core app subscribing to Dapr pub/sub topics via Redis Streams
 - **Dapr Sidecar** -- handles pub/sub, state management, and service invocation
 - **Redis** -- message broker and state store
+- **Jaeger** -- distributed tracing via OpenTelemetry (UI at `http://localhost:16686`)
 
 Docker Compose files:
 - `docker-compose.yaml` -- app service, Redis
-- `compose/dapr-docker-compose.yaml` -- Dapr sidecar configuration
+- `compose/dapr-docker-compose.yaml` -- Dapr sidecar, Jaeger tracing
 
 ## CI/CD
 
@@ -104,8 +107,10 @@ GitHub Actions runs on every push to `main`, tags `v*`, and pull requests.
 
 | Job | Triggers | Steps |
 |-----|----------|-------|
-| **ci** | push, PR, tags | Build, Lint, Test |
+| **lint** | push, PR, tags | Lint (format check) |
+| **build** | after lint passes | Build |
+| **test** | after lint passes | Test |
 
-A separate cleanup workflow removes old workflow runs weekly (retains 7 days / minimum 5 runs).
+A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) removes old workflow runs weekly (retains 7 days / minimum 5 runs).
 
-[Renovate](https://docs.renovatebot.com/) keeps dependencies up to date with platform automerge enabled.
+[Renovate](https://docs.renovatebot.com/) keeps dependencies up to date with branch automerge (squash strategy) enabled.

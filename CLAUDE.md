@@ -7,7 +7,9 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 - **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.201`)
 - **Framework**: ASP.NET Core with Dapr.AspNetCore
 - **Infrastructure**: Docker Compose (multi-file), Dapr sidecar, Redis
-- **Solution**: `dapr-docker-csharp.sln` with single project `src/Dapr.Demo.QueueProcessor/`
+- **Solution**: `dapr-docker-csharp.slnx` (.NET 10 XML format)
+- **App project**: `src/queue-processor/`
+- **Test project**: `tests/queue-processor.tests/` (TUnit + NSubstitute + WebApplicationFactory)
 
 ## Build & Dev Commands
 
@@ -15,13 +17,13 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 |---------|---------|
 | `make help` | List all available targets |
 | `make build` | Restore + build in Release mode |
-| `make test` | Run tests |
+| `make test` | Run TUnit tests via `dotnet run` |
 | `make lint` | Check code formatting (`dotnet format --verify-no-changes`) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts (bin/obj) |
 | `make update` | Update NuGet packages to latest |
 | `make run` | Run application locally |
-| `make ci` | Full local CI pipeline (build + lint + test) |
+| `make ci` | Full local CI pipeline (format + lint + test + build) |
 | `make ci-run` | Run GitHub Actions locally via act |
 | `make release` | Create and push a new tag |
 
@@ -65,16 +67,30 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 - **act**: 0.2.87 (installed by `make deps-act` / `make ci-run`)
 - **.NET SDK**: 10.0.201 (from `global.json`)
 
+## Testing
+
+- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.28.0 with Microsoft Testing Platform
+- **Mocking**: NSubstitute 5.3.0
+- **Integration**: `WebApplicationFactory<Program>` from `Microsoft.AspNetCore.Mvc.Testing`
+- **Run**: `make test` (uses `dotnet run` — required for TUnit on .NET 10 SDK)
+
 ## CI
 
-GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags `v*`, and PRs:
-1. Build (`make build`)
-2. Lint (`make lint` -- `dotnet format --verify-no-changes`)
-3. Test (`make test`)
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags `v*`, PRs, and `workflow_call`:
 
-Permissions: `contents: read` (minimal).
+| Job | Depends on | Step |
+|-----|-----------|------|
+| **lint** | — | `make lint` (`dotnet format --verify-no-changes`) |
+| **build** | lint | `make build` |
+| **test** | lint | `make test` |
+
+Permissions: `contents: read` (minimal). SDK version from `global.json`. NuGet caching via `packages.lock.json`.
 
 A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) removes old runs weekly.
+
+## Backlog
+
+- [ ] Add health check endpoint and Docker HEALTHCHECK instruction
 
 ## Skills
 
@@ -88,11 +104,3 @@ Use the following skills when working on related files:
 | `.github/workflows/*.yml` | `/ci-workflow` |
 
 When spawning subagents, always pass conventions from the respective skill into the agent's prompt.
-
-## Backlog
-
-- [ ] Add unit tests for QueueProcessor (currently no test project exists in the solution)
-- [ ] Pin `mcr.microsoft.com/dotnet/sdk:10.0` image in `docker-compose.yaml` with digest (runtime images already pinned)
-- [ ] Add health check endpoint and Docker HEALTHCHECK instruction
-- [ ] Consider adding `dependabot.yml` as secondary dependency updater or remove in favor of Renovate-only
-- [ ] Add `.editorconfig` for consistent formatting rules across editors
