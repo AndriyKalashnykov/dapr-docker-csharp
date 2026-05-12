@@ -85,7 +85,8 @@ Pinned in `.mise.toml` and Renovate-tracked:
 
 - **Node**: 22 (used by Renovate validation)
 - **pnpm**: 11.1.1
-- **act**: 0.2.87 (`aqua:nektos/act`)
+- **jq**: 1.8.1 (`aqua:jqlang/jq`)
+- **act**: 0.2.88 (`aqua:nektos/act`)
 - **trivy**: 0.70.0 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
 - **mermaid-cli**: 11.14.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)

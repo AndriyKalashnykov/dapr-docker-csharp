@@ -3,9 +3,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://app.renovatebot.com/dashboard#github/AndriyKalashnykov/dapr-docker-csharp)
 
-# Dapr on Docker Compose — C# Queue Processor
+# Production-Pattern C# Microservice on Dapr + Docker Compose
 
-**Runtime surface:** ASP.NET Core minimal-API subscriber wired to a Dapr sidecar (`Dapr.AspNetCore`) for pub/sub on Redis Streams via `MapSubscribeHandler` + CloudEvents and Dapr state on Redis, with `OpenTelemetry.Extensions.Hosting` exporting OTLP traces to Jaeger and an `AddHealthChecks()`-backed `/healthz` endpoint probed by both the Dockerfile HEALTHCHECK and a compose-level healthcheck. **Delivery surface:** three-layer test pyramid (TUnit + FakeItEasy unit · TUnit + Testcontainers Redis+daprd integration · bash/curl e2e through Docker Compose covering pub/sub roundtrip and Jaeger trace ingestion), composite `make static-check` (`dotnet format --verify-no-changes` · `-warnaserror` · NuGet `--vulnerable` audit · Trivy filesystem scan · gitleaks · `minlag/mermaid-cli` C4 diagram lint), multi-stage production Dockerfile (non-root `app:app`, BuildKit-ARG-tunable HEALTHCHECK), GitHub Actions CI with `dorny/paths-filter` changes detector + `ci-pass` aggregator + `jdx/mise-action` toolchain bootstrap, `.env.example`-driven parameter externalization, mise-pinned auxiliary toolchain (Node, pnpm, act, trivy, gitleaks), and Renovate-managed deps with `automergeType: pr` covering NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex (Makefile + C# annotations).
+**Runtime surface:** ASP.NET Core minimal-API subscriber wired to a Dapr sidecar (`Dapr.AspNetCore`) for pub/sub on Redis Streams via `MapSubscribeHandler` + CloudEvents and Dapr state on Redis, with `OpenTelemetry.Extensions.Hosting` exporting OTLP traces to Jaeger and an `AddHealthChecks()`-backed `/healthz` endpoint probed by both the Dockerfile HEALTHCHECK and a compose-level healthcheck. **Delivery surface:** three-layer test pyramid (TUnit + FakeItEasy unit · TUnit + Testcontainers Redis+daprd integration · bash/curl e2e through Docker Compose covering pub/sub roundtrip and Jaeger trace ingestion), composite `make static-check` (`dotnet format --verify-no-changes` · `-warnaserror` · NuGet `--vulnerable` audit · Trivy filesystem scan · gitleaks · `minlag/mermaid-cli` C4 diagram lint), multi-stage production Dockerfile (non-root `app:app`, BuildKit-ARG-tunable HEALTHCHECK), GitHub Actions CI with `dorny/paths-filter` changes detector + `ci-pass` aggregator + `jdx/mise-action` toolchain bootstrap, `.env.example`-driven parameter externalization, mise-pinned auxiliary toolchain (Node, pnpm, jq, act, trivy, gitleaks), and Renovate-managed deps with `automergeType: pr` covering NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex (Makefile + C# annotations).
 
 ## Tech Stack
 
@@ -43,9 +43,8 @@ make dapr-pub   # publish a test message
 | [Git](https://git-scm.com/) | 2.0+ | Version control |
 | [.NET SDK](https://dotnet.microsoft.com/download) | 10.0 | C# runtime and compiler (pinned in `global.json`) |
 | [Docker](https://www.docker.com/) | latest | Container runtime with Compose v2 |
-| [mise](https://mise.jdx.dev/) | latest | Polyglot version manager (Node, pnpm, act per `.mise.toml`) |
-| [jq](https://jqlang.github.io/jq/) | latest | API response formatting |
-| [redis-cli](https://redis.io/docs/getting-started/) | latest | Redis debugging (optional) |
+| [mise](https://mise.jdx.dev/) | latest | Polyglot version manager (Node, pnpm, jq, act, trivy, gitleaks per `.mise.toml`) |
+| [jq](https://jqlang.github.io/jq/) | 1.8.x | API response formatting (auto-installed by `make deps` via mise) |
 
 Install required tools (idempotent — verifies .NET / Docker, bootstraps mise, installs `.mise.toml` tools):
 
@@ -155,9 +154,9 @@ Run `make help` to see all targets.
 
 | Target | Description |
 |--------|-------------|
-| `make redis-pending` | Show pending Redis stream messages |
-| `make redis-clear` | Clear Redis stream messages |
-| `make redis-monitor` | Monitor Redis commands |
+| `make redis-pending` | Show pending Redis stream messages (via compose-running container) |
+| `make redis-clear` | Clear Redis stream messages (via compose-running container) |
+| `make redis-monitor` | Monitor Redis commands (via compose-running container) |
 
 ### CI & Utilities
 
