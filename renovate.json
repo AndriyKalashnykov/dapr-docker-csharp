@@ -25,6 +25,18 @@
     "mise",
     "custom.regex"
   ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/__pycache__/**",
+    "**/dist/**",
+    "**/.idea/**",
+    "**/.vscode/**",
+    "**/.yarn/**",
+    "**/bin/**",
+    "**/obj/**"
+  ],
   "vulnerabilityAlerts": {
     "labels": [
       "security"
