@@ -9,5 +9,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/queue-processor.tests/queue-processor.tests.csproj" />
+    <Project Path="tests/queue-processor.integration.tests/queue-processor.integration.tests.csproj" />
   </Folder>
 </Solution>

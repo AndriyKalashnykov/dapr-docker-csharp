@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+#
+# E2E override — drops host port bindings on internal-only services so multiple
+# e2e runs (or a parallel `make start`) don't collide on 6379/16686/4317/4318.
+# The app's host port is still controlled by HOST_PORT in docker-compose.yaml.
+# Requires Compose Spec 2.20+ for `!reset`.
+services:
+  redis:
+    ports: !reset []
+  jaeger:
+    ports: !reset []

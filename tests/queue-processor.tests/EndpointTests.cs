@@ -1,18 +1,19 @@
 using System.Net;
 using System.Net.Http.Json;
 using Dapr.Client;
-using NSubstitute;
+using FakeItEasy;
 
 namespace QueueProcessor.Tests;
 
+[Category("Unit")]
 public class EndpointTests
 {
     [Test]
     public async Task GetRoot_ReturnsCounterState()
     {
         await using var factory = new QueueProcessorWebFactory();
-        factory.MockDaprClient
-            .GetStateAsync<int>("statestore", "counter", cancellationToken: Arg.Any<CancellationToken>())
+        A.CallTo(() => factory.MockDaprClient
+                .GetStateAsync<int>("statestore", "counter", A<ConsistencyMode?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
             .Returns(42);
 
         using var client = factory.CreateClient();
@@ -28,8 +29,8 @@ public class EndpointTests
     public async Task GetRoot_WhenNoState_ReturnsZero()
     {
         await using var factory = new QueueProcessorWebFactory();
-        factory.MockDaprClient
-            .GetStateAsync<int>("statestore", "counter", cancellationToken: Arg.Any<CancellationToken>())
+        A.CallTo(() => factory.MockDaprClient
+                .GetStateAsync<int>("statestore", "counter", A<ConsistencyMode?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
             .Returns(0);
 
         using var client = factory.CreateClient();
@@ -51,10 +52,11 @@ public class EndpointTests
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
         var result = await response.Content.ReadFromJsonAsync<int>();
-        await Assert.That(result).IsEqualTo(25); // 5 * 5
+        await Assert.That(result).IsEqualTo(25);
 
-        await factory.MockDaprClient.Received(1)
-            .SaveStateAsync("statestore", "counter", 25, cancellationToken: Arg.Any<CancellationToken>());
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", 25, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
     }
 
     [Test]
@@ -67,10 +69,24 @@ public class EndpointTests
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
         var result = await response.Content.ReadFromJsonAsync<int>();
-        await Assert.That(result).IsEqualTo(0); // 0 * 0
+        await Assert.That(result).IsEqualTo(0);
 
-        await factory.MockDaprClient.Received(1)
-            .SaveStateAsync("statestore", "counter", 0, cancellationToken: Arg.Any<CancellationToken>());
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", 0, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public async Task GetHealthz_ReturnsHealthy()
+    {
+        await using var factory = new QueueProcessorWebFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/healthz");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        await Assert.That(body).IsEqualTo("Healthy");
     }
 
     [Test]
@@ -83,9 +99,10 @@ public class EndpointTests
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
         var result = await response.Content.ReadFromJsonAsync<int>();
-        await Assert.That(result).IsEqualTo(9); // -3 * -3
+        await Assert.That(result).IsEqualTo(9);
 
-        await factory.MockDaprClient.Received(1)
-            .SaveStateAsync("statestore", "counter", 9, cancellationToken: Arg.Any<CancellationToken>());
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", 9, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
     }
 }

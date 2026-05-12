@@ -1,0 +1,26 @@
+# Build outputs — never copy host artifacts into image.
+**/bin/
+**/obj/
+
+# IDE / editor metadata
+.idea/
+.vscode/
+*.swp
+
+# Local-only tooling state
+.mise.toml
+.git/
+.github/
+
+# Tests + scripts not needed inside the runtime image.
+tests/
+e2e/
+scripts/
+
+# Docs and configuration files only needed at build/run on the host.
+*.md
+LICENSE
+docker-compose.yaml
+compose/
+renovate.json
+Makefile

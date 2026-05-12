@@ -1,4 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
+#
+# All values are env-driven with defaults; the canonical defaults live in
+# `.env.example` and a developer override goes in `.env` (gitignored).
 services:
   ## QueueProcessor
   queueprocessor:
@@ -8,30 +11,44 @@ services:
     volumes:
       - ./src/queue-processor:/app
     environment:
-      ASPNETCORE_URLS: http://*:5000
+      ASPNETCORE_URLS: "http://*:${APP_INTERNAL_PORT:-5000}"
       ASPNETCORE_ENVIRONMENT: Development
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://jaeger:4317}"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}"
+      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-queueprocessor}"
     ports:
-      - 5000:5000
+      - "${HOST_PORT:-5000}:${APP_INTERNAL_PORT:-5000}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://${HEALTHCHECK_HOST:-localhost}:${APP_INTERNAL_PORT:-5000}/healthz || exit 1"]
+      interval: ${COMPOSE_HEALTHCHECK_INTERVAL:-10s}
+      timeout: ${COMPOSE_HEALTHCHECK_TIMEOUT:-3s}
+      retries: ${COMPOSE_HEALTHCHECK_RETRIES:-30}
+      start_period: ${COMPOSE_HEALTHCHECK_START_PERIOD:-60s}
     depends_on:
       - redis
     networks:
       - dapr-demo-network
   queueprocessor-dapr:
-    image: daprio/daprd:1.17.3@sha256:7d0fc04a9ff116dd05fd8eabd86a09d885a252235903defb6f781225153793c4
-    command: ["./daprd",
-     "--app-id", "queueprocessor",
-     "--app-port", "5000",
-     "--resources-path", "/components",
-     "--config", "/configuration/configuration.yaml"]
+    image: daprio/daprd:1.17.6@sha256:f5ba4f35b995d0e066344ff24cac6eae38e6fc89797f5140aa153f6c7b6b6417
+    command:
+      - "./daprd"
+      - "--app-id"
+      - "queueprocessor"
+      - "--app-port"
+      - "${APP_INTERNAL_PORT:-5000}"
+      - "--resources-path"
+      - "/components"
+      - "--config"
+      - "/configuration/configuration.yaml"
     volumes:
       - ./compose/configuration/:/configuration
       - ./compose/components/:/components
     network_mode: service:queueprocessor
 
   redis:
-    image: redis:8@sha256:009cc37796fbdbe1b631b4cc0582bed167e5e403ed8bcd06f77eb6cb5aeb6f93
+    image: redis:8@sha256:0c341492924cad6f5483f9133e43bd6c51ecdecbcadfac5b51657393b6a7936c
     ports:
-      - 6379:6379
+      - "${REDIS_HOST_PORT:-6379}:6379"
     networks:
       - dapr-demo-network
 
