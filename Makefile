@@ -197,17 +197,17 @@ dapr-counter:
 dapr-get:
 	@curl -s -X GET "http://$(APP_HOST):$(HOST_PORT)/" -H "Content-Type: application/json" | jq .
 
-#redis-pending: @ Show pending Redis stream messages
+#redis-pending: @ Show pending Redis stream messages (via compose-running container)
 redis-pending:
-	@redis-cli XRANGE $(TOPIC_NAME) - +
+	@$(DOCKER_COMPOSE) exec -T redis redis-cli XRANGE $(TOPIC_NAME) - +
 
-#redis-clear: @ Clear Redis stream messages
+#redis-clear: @ Clear Redis stream messages (via compose-running container)
 redis-clear:
-	@redis-cli XTRIM $(TOPIC_NAME) MAXLEN = 0
+	@$(DOCKER_COMPOSE) exec -T redis redis-cli XTRIM $(TOPIC_NAME) MAXLEN = 0
 
-#redis-monitor: @ Monitor Redis commands
+#redis-monitor: @ Monitor Redis commands (via compose-running container)
 redis-monitor:
-	@redis-cli MONITOR
+	@$(DOCKER_COMPOSE) exec redis redis-cli MONITOR
 
 #release: @ Create and push a new tag
 release:

@@ -43,9 +43,8 @@ make dapr-pub   # publish a test message
 | [Git](https://git-scm.com/) | 2.0+ | Version control |
 | [.NET SDK](https://dotnet.microsoft.com/download) | 10.0 | C# runtime and compiler (pinned in `global.json`) |
 | [Docker](https://www.docker.com/) | latest | Container runtime with Compose v2 |
-| [mise](https://mise.jdx.dev/) | latest | Polyglot version manager (Node, pnpm, act per `.mise.toml`) |
-| [jq](https://jqlang.github.io/jq/) | latest | API response formatting |
-| [redis-cli](https://redis.io/docs/getting-started/) | latest | Redis debugging (optional) |
+| [mise](https://mise.jdx.dev/) | latest | Polyglot version manager (Node, pnpm, jq, act, trivy, gitleaks per `.mise.toml`) |
+| [jq](https://jqlang.github.io/jq/) | 1.8.x | API response formatting (auto-installed by `make deps` via mise) |
 
 Install required tools (idempotent — verifies .NET / Docker, bootstraps mise, installs `.mise.toml` tools):
 
