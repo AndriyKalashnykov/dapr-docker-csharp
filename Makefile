@@ -141,11 +141,17 @@ ci: deps static-check test integration-test build
 #ci-run: @ Run GitHub Actions workflow locally using act
 ci-run: deps-act
 	@docker container prune -f >/dev/null 2>&1 || true
-	@ACT_PORT=$$(shuf -i $(ACT_PORT_MIN)-$(ACT_PORT_MAX) -n 1); \
+	@# Forward GITHUB_TOKEN env-only (per security rule: never put secret VALUES on argv).
+	@# act --secret KEY reads VALUE from inherited env. Auto-derive from gh CLI when unset.
+	@if [ -z "$$GITHUB_TOKEN" ] && command -v gh >/dev/null 2>&1; then \
+		export GITHUB_TOKEN="$$(gh auth token 2>/dev/null)"; \
+	fi; \
+	ACT_PORT=$$(shuf -i $(ACT_PORT_MIN)-$(ACT_PORT_MAX) -n 1); \
 	ARTIFACT_PATH=$$(mktemp -d); \
-	for j in static-check build test integration-test ci-pass; do \
+	for j in static-check build test integration-test e2e ci-pass; do \
 		echo "==> act job: $$j"; \
 		act push --job "$$j" --container-architecture linux/amd64 --pull=false \
+			--secret GITHUB_TOKEN \
 			--artifact-server-port "$$ACT_PORT" \
 			--artifact-server-path "$$ARTIFACT_PATH" || exit $$?; \
 	done
