@@ -11,19 +11,19 @@
 
 | Component | Technology |
 |-----------|------------|
-| Language | C# / .NET 10.0 (SDK 10.0.201 via `global.json`) |
-| Framework | ASP.NET Core (`Microsoft.NET.Sdk.Web`), `Dapr.AspNetCore` |
+| Language | C# / .NET 10.0 LTS (SDK 10.0.203 via `global.json`, `rollForward: latestFeature`) |
+| Framework | ASP.NET Core (`Microsoft.NET.Sdk.Web`), `Dapr.AspNetCore` 1.17 |
 | Messaging | Dapr pub/sub on Redis Streams |
 | State store | Dapr state on Redis |
-| Tracing | OpenTelemetry → Jaeger (compose-declared) |
-| Unit / integration testing | TUnit 1.28.0 + `WebApplicationFactory` + Testcontainers 4.11 |
-| Mocking | FakeItEasy 9.0.1 |
-| E2E testing | Docker Compose + bash curl harness |
-| Container runtime | Docker Compose v2 |
+| Tracing | OpenTelemetry → Jaeger via `OpenTelemetry.Extensions.Hosting` 1.15 (OTLP gRPC) |
+| Unit / integration testing | TUnit 1.44 + `WebApplicationFactory` + Testcontainers 4.11 (Redis + daprd) |
+| Mocking | FakeItEasy 9.0 |
+| E2E testing | Docker Compose + bash curl harness + Dapr publish API |
+| Container runtime | Docker Compose v2; production multi-stage `src/queue-processor/Dockerfile` (non-root `app:app`, BuildKit-ARG HEALTHCHECK) |
 | Static analysis | `dotnet format`, `dotnet build -warnaserror`, `dotnet list package --vulnerable`, Trivy filesystem scan, gitleaks, mermaid-cli |
-| CI | GitHub Actions (changes → static-check → build/test/integration-test → e2e → ci-pass) |
-| Dependency mgmt | Renovate (PR automerge, squash) |
-| Version manager | mise (`.mise.toml` pins Node, pnpm, act, trivy, gitleaks) |
+| CI | GitHub Actions (changes → static-check → build/test/integration-test → e2e → ci-pass), `dorny/paths-filter` + `jdx/mise-action` |
+| Dependency mgmt | Renovate (`automergeType: pr`, squash) — covers NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex |
+| Version manager | mise (`.mise.toml` pins Node, pnpm, jq, act, trivy, gitleaks) |
 
 ## Quick Start
 
