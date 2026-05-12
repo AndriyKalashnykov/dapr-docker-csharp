@@ -452,3 +452,10 @@ $RECYCLE.BIN/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+
+# Local environment overrides (commit `.env.example`, never `.env`)
+.env
+
+# Claude Code harness state
+.claude/

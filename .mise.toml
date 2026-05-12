@@ -1,0 +1,6 @@
+[tools]
+node = "22"
+pnpm = "11.1.1"
+"aqua:nektos/act" = "0.2.88"
+"aqua:aquasecurity/trivy" = "0.70.0"
+"aqua:gitleaks/gitleaks" = "8.30.1"

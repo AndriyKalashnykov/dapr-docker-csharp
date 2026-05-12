@@ -4,24 +4,60 @@
     "net10.0": {
       "Dapr.AspNetCore": {
         "type": "Direct",
-        "requested": "[1.17.7, )",
-        "resolved": "1.17.7",
-        "contentHash": "yRXbCjQQ+Mm5wtCVfwzsIb8eliS16ekUQzGqdepW9LkfK5gdESyM4V1/ZijvmiFJEBJgXCCiX4rp0RK4LaMaRQ==",
+        "requested": "[1.17.9, )",
+        "resolved": "1.17.9",
+        "contentHash": "9YqQ+7fDs/ci5ebavcoIz0ykj2BwFxrCpccG4FowcSP0lf947ygsFjN/2aRBz0kjSB7GZsxslq6uTaFLJY6E7g==",
         "dependencies": {
-          "Dapr.Client": "1.17.7",
-          "Dapr.Common": "1.17.7",
+          "Dapr.Client": "1.17.9",
+          "Dapr.Common": "1.17.9",
           "Google.Api.CommonProtos": "2.17.0",
           "Google.Protobuf": "3.34.0",
           "Grpc.Net.Client": "2.76.0"
         }
       },
+      "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
+        "type": "Direct",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "FEXJepcseTGbATiCkUfP7ipoFEYYfl/0UmmUwi0KxCPg9PaUA8ab2P1LGopK+/HExasJ1ZutFhZrN6WvUIR23g==",
+        "dependencies": {
+          "OpenTelemetry": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "type": "Direct",
+        "requested": "[1.15.3, )",
+        "resolved": "1.15.3",
+        "contentHash": "u8n/W8yIlqv0BXZmvId1iVaeWXG42tGKdTkuLYg5g57Y/r9CeUNzqtrSHNdG5IoO8iPX79w3v+WsbAHgUQbfeg==",
+        "dependencies": {
+          "OpenTelemetry": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Instrumentation.AspNetCore": {
+        "type": "Direct",
+        "requested": "[1.15.2, )",
+        "resolved": "1.15.2",
+        "contentHash": "2nPd7r0ug/gd6/CNFL6Rlu+RSQ9WYGSGHAYQ1ssbSqyzKJpqTunfx2I/1O0WB5k+L0cyXbG4XVZpoSoUc3M7wg==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
+      "OpenTelemetry.Instrumentation.Http": {
+        "type": "Direct",
+        "requested": "[1.15.1, )",
+        "resolved": "1.15.1",
+        "contentHash": "vFO4Fj/dXkoVNGo/nhoGpO2zYQmZwr4jTID7oRGo+XlQ8LqksyZjUXQ4p39RfUvTID7IzzL8Qe71tW7CcAFymA==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "[1.15.3, 2.0.0)"
+        }
+      },
       "Dapr.Client": {
         "type": "Transitive",
-        "resolved": "1.17.7",
-        "contentHash": "YGA46q/Qr4VupRGTx3VHph3puXqYrcV4twzDBsx4r9Gm2enrOyHjR/CF+oNqaGW9EfNd26ceMcR295FqPKqEIQ==",
+        "resolved": "1.17.9",
+        "contentHash": "hfmnGnuij8jqiKSONfLAB5rzse+NtjbpDj0+7CC808aqSzw8+PKH5pSX/7tqS3Z4TX4E5CU12cmRfQ9DpfVkDQ==",
         "dependencies": {
-          "Dapr.Common": "1.17.7",
-          "Dapr.Protos": "1.17.7",
+          "Dapr.Common": "1.17.9",
+          "Dapr.Protos": "1.17.9",
           "Google.Api.CommonProtos": "2.17.0",
           "Google.Protobuf": "3.34.0",
           "Grpc.Net.Client": "2.76.0"
@@ -29,10 +65,10 @@
       },
       "Dapr.Common": {
         "type": "Transitive",
-        "resolved": "1.17.7",
-        "contentHash": "08tSD6hBqGUq8hUdqrLmcwtMRsEwKAuxXqC3pgAJtyUIxP8xbmYUP2tv6us8oRNYQSr/vMP4hlfb9NGk+34j9Q==",
+        "resolved": "1.17.9",
+        "contentHash": "0KluEFOk6Dvgqpkmq12VPtaIO+LNEfjAVCQtXJJiQmRAFLBKvRCrlL4b2BOyozn2ccRBO1d1M3D+2WxfG70NMA==",
         "dependencies": {
-          "Dapr.Protos": "1.17.7",
+          "Dapr.Protos": "1.17.9",
           "Google.Api.CommonProtos": "2.17.0",
           "Google.Protobuf": "3.34.0",
           "Grpc.Net.Client": "2.76.0"
@@ -40,8 +76,8 @@
       },
       "Dapr.Protos": {
         "type": "Transitive",
-        "resolved": "1.17.7",
-        "contentHash": "jKU/tbkmh29z+hnNGuisgaD233zjOcf1IAnbRL1Oovt6ryMZemiBpnrtcpOOEnCroCx5kBbJVAKwQqIdQiU97A==",
+        "resolved": "1.17.9",
+        "contentHash": "SbuEevY/tNubnaqt2QFj6TK8GcHRibwhH2T61LKQByMCazTFdHuhmI2FQ8eo3LA9dEipS7wROAHbTkHvon/Iag==",
         "dependencies": {
           "Google.Api.CommonProtos": "2.17.0",
           "Google.Protobuf": "3.34.0",
@@ -80,6 +116,27 @@
         "contentHash": "bZpiMVYgvpB44/wBh1RotrkqC7bg2FOasLri2GhR3hMKyzsiTxCoDE49YjPrJeFc4RW0wS8u+EInI09sjxVFRA==",
         "dependencies": {
           "Grpc.Core.Api": "2.76.0"
+        }
+      },
+      "OpenTelemetry": {
+        "type": "Transitive",
+        "resolved": "1.15.3",
+        "contentHash": "N0i6WjPoHPbZyms1ugbDIFAJFuGlpeExJMU/+XSL0lQRUkg/D0utFkDoLXf8Z1km5B+xVZ2GyMXXiX8qdeNmPg==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.15.3"
+        }
+      },
+      "OpenTelemetry.Api": {
+        "type": "Transitive",
+        "resolved": "1.15.3",
+        "contentHash": "fX+fkCysfPut+qCcT3bKqyX4QN9Saf4CgX8HLOHywEVD+Xr7sULtfuypITpoDysjx8R59dn/3mWhgimMH8cm/g=="
+      },
+      "OpenTelemetry.Api.ProviderBuilderExtensions": {
+        "type": "Transitive",
+        "resolved": "1.15.3",
+        "contentHash": "SYn0lqYDwLMWhv/zlNGsQcl2yX++yTumanX46bmOZE/ZDOd1WjPBO2kZaZgKLEZTZk48pavIFGJ6vOvxXgWVFQ==",
+        "dependencies": {
+          "OpenTelemetry.Api": "1.15.3"
         }
       }
     }

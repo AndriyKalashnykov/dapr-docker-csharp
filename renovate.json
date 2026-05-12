@@ -14,15 +14,28 @@
   "prHourlyLimit": 0,
   "platformAutomerge": true,
   "automerge": true,
-  "automergeType": "branch",
+  "automergeType": "pr",
   "automergeStrategy": "squash",
   "ignoreTests": false,
   "enabledManagers": [
     "github-actions",
     "nuget",
+    "dockerfile",
     "docker-compose",
-    "dotnet-sdk",
-    "regex"
+    "mise",
+    "custom.regex"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/bower_components/**",
+    "**/vendor/**",
+    "**/__pycache__/**",
+    "**/dist/**",
+    "**/.idea/**",
+    "**/.vscode/**",
+    "**/.yarn/**",
+    "**/bin/**",
+    "**/obj/**"
   ],
   "vulnerabilityAlerts": {
     "labels": [
@@ -34,36 +47,26 @@
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Track act version in Makefile",
-      "managerFilePatterns": ["/^Makefile$/"],
-      "matchStrings": [
-        "ACT_VERSION\\s*:=\\s*(?<currentValue>.*?)\\n"
+      "description": "Generic # renovate: comment-driven version pins in Makefile/scripts",
+      "managerFilePatterns": [
+        "/^Makefile$/",
+        "scripts/**/*.sh",
+        "scripts/**/*.bash"
       ],
-      "depNameTemplate": "nektos/act",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\s*\\n\\s*[A-Z_]+\\s*[:?]?=\\s*(?<currentValue>v?\\d[\\w.+-]*)"
+      ]
     },
     {
       "customType": "regex",
-      "description": "Track nvm version in Makefile",
-      "managerFilePatterns": ["/^Makefile$/"],
-      "matchStrings": [
-        "NVM_VERSION\\s*:=\\s*(?<currentValue>.*?)\\n"
+      "description": "// renovate: comment-driven version pins in C# source (image:tag in const strings)",
+      "managerFilePatterns": [
+        "tests/**/*.cs",
+        "src/**/*.cs"
       ],
-      "depNameTemplate": "nvm-sh/nvm",
-      "datasourceTemplate": "github-releases",
-      "extractVersionTemplate": "^v(?<version>.*)$"
-    },
-    {
-      "customType": "regex",
-      "description": "Track Node.js major version in Makefile",
-      "managerFilePatterns": ["/^Makefile$/"],
       "matchStrings": [
-        "NODE_VERSION\\s*:=\\s*(?<currentValue>\\d+)\\n"
-      ],
-      "depNameTemplate": "node",
-      "datasourceTemplate": "node-version",
-      "versioningTemplate": "node"
+        "//\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?\\s*\\n\\s*(?:private|public|internal|protected)?\\s*(?:static\\s+)?(?:readonly\\s+)?const\\s+string\\s+\\w+\\s*=\\s*\"[^\":]+:(?<currentValue>[^\"]+)\""
+      ]
     }
   ],
   "packageRules": [
@@ -85,7 +88,6 @@
       "description": "Group .NET Docker images",
       "groupName": "Dotnet Docker images",
       "matchPackageNames": [
-        "dotnet-sdk",
         "mcr.microsoft.com/dotnet/aspnet",
         "mcr.microsoft.com/dotnet/sdk",
         "mcr.microsoft.com/dotnet/runtime",
@@ -107,11 +109,11 @@
       ]
     },
     {
-      "description": "Group Makefile tool versions",
+      "description": "Group mise-managed tools",
       "matchManagers": [
-        "custom.regex"
+        "mise"
       ],
-      "groupName": "Makefile tools"
+      "groupName": "mise tools"
     }
   ]
 }
