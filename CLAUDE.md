@@ -90,7 +90,7 @@ Pinned in `.mise.toml` and Renovate-tracked:
 - **trivy**: 0.70.0 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
 - **mermaid-cli**: 11.14.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
-- **.NET SDK**: 10.0.201 (from `global.json`)
+- **.NET SDK**: 10.0.203 (from `global.json`)
 
 ## Testing
 
@@ -122,6 +122,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 | **ci-pass** | all of the above (always) | Aggregator status check (target for branch protection / Rulesets) |
 
 Permissions: workflow-level `contents: read` + `pull-requests: read` (for `paths-filter`). SDK version from `global.json`. NuGet caching via `packages.lock.json`. mise-action installs `.mise.toml`-pinned tools for the static-check job.
+
+**Toolchain split (documented exception to the "mise-action over `setup-*`" portfolio rule)**: `actions/setup-dotnet@<sha>` is retained alongside `jdx/mise-action` because (a) `global.json`'s `rollForward: latestFeature` is honored at install time by setup-dotnet — mise would require an exact `.mise.toml` pin and lose the rollForward semantics, and (b) setup-dotnet's `cache: true` + `packages.lock.json` is the canonical NuGet cache. mise-action owns the non-.NET surface (Node, pnpm, jq, act, trivy, gitleaks).
 
 A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) prunes old workflow runs (`cleanup-runs`) and stale branch caches (`cleanup-caches`) weekly.
 

@@ -1,0 +1,87 @@
+using System.Net;
+using System.Net.Http.Json;
+using Dapr.Client;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace QueueProcessor.IntegrationTests;
+
+// Endpoints exercised through Program.cs's real route handlers against a real
+// daprd sidecar + real Redis. Unit tests cover the same handlers with a mocked
+// DaprClient; this layer catches DI wiring, state-store name drift, and
+// serialization regressions that only surface against real Dapr.
+//
+// The app's `/counter` endpoint persists to a fixed key ("counter") so tests
+// within this class must serialize (NotInParallel) to avoid cross-test races.
+// Other test classes are unaffected: StateStoreIntegrationTests uses
+// Guid-suffixed keys.
+[ClassDataSource<DaprStateStoreFixture>(Shared = SharedType.PerClass)]
+[Category("Integration")]
+[NotInParallel]
+public sealed class EndpointsIntegrationTests(DaprStateStoreFixture fixture)
+{
+    private const string Store = "statestore";
+    private const string CounterKey = "counter";
+
+    private WebApplicationFactory<Program> CreateFactory() =>
+        new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureServices(services =>
+            {
+                var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DaprClient));
+                if (descriptor is not null)
+                    services.Remove(descriptor);
+                services.AddSingleton(fixture.Client);
+            });
+        });
+
+    [Test]
+    public async Task PostCounter_PersistsState_AndGetReturnsSquaredValue()
+    {
+        await fixture.Client.DeleteStateAsync(Store, CounterKey);
+
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var postResponse = await client.PostAsJsonAsync("/counter", 7);
+        await Assert.That(postResponse.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+        await Assert.That(postResponse.Headers.Location?.OriginalString).IsEqualTo("/");
+        var postValue = await postResponse.Content.ReadFromJsonAsync<int>();
+        await Assert.That(postValue).IsEqualTo(49);
+
+        var getResponse = await client.GetAsync("/");
+        await Assert.That(getResponse.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var getValue = await getResponse.Content.ReadFromJsonAsync<int>();
+        await Assert.That(getValue).IsEqualTo(49);
+    }
+
+    [Test]
+    public async Task GetRoot_ReturnsZero_WhenStateIsAbsent()
+    {
+        await fixture.Client.DeleteStateAsync(Store, CounterKey);
+
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        var value = await response.Content.ReadFromJsonAsync<int>();
+        await Assert.That(value).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task PostCounter_OverwritesPriorValue()
+    {
+        await fixture.Client.SaveStateAsync(Store, CounterKey, 100);
+
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        var postResponse = await client.PostAsJsonAsync("/counter", 4);
+        await Assert.That(postResponse.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+
+        var stored = await fixture.Client.GetStateAsync<int>(Store, CounterKey);
+        await Assert.That(stored).IsEqualTo(16);
+    }
+}

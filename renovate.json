@@ -54,7 +54,7 @@
         "scripts/**/*.bash"
       ],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\s*\\n\\s*[A-Z_]+\\s*[:?]?=\\s*(?<currentValue>v?\\d[\\w.+-]*)"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\s*\\n\\s*[A-Z_]+\\s*[:?]?=\\s*(?<currentValue>[\\w][\\w.+-]*)"
       ]
     },
     {

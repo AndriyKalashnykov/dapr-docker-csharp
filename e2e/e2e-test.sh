@@ -113,6 +113,39 @@ assert_body_equals() {
     fi
 }
 
+# check_post — POST helper that asserts HTTP status + Location header + body
+# in a single curl, per the test-coverage skill's POST-assertion rule. Three
+# orthogonal contracts (status code, Location target, response body) are each
+# load-bearing for the queueprocessor's `Results.Accepted("/", squared)`
+# response shape; asserting only the body would let a 200/Created regression
+# ship as long as the squared value still appeared in the response stream.
+#
+# Captures the body via -o, the response headers via -D, and the status code
+# via -w '%{http_code}' — one curl invocation, no race between separate probes.
+check_post() {
+    local name="$1" url="$2" body_json="$3" expected_status="$4" expected_body="$5" expected_location="$6"
+    local body_tmp headers_tmp; body_tmp=$(mktemp); headers_tmp=$(mktemp)
+    local status
+    status=$(curl -s -o "$body_tmp" -D "$headers_tmp" -w '%{http_code}' \
+        --max-time "$E2E_CURL_MAX_TIME_SECONDS" \
+        -X POST -H 'Content-Type: application/json' -d "$body_json" "$url" 2>/dev/null || echo "000")
+    local body; body=$(cat "$body_tmp"); rm -f "$body_tmp"
+    # tolower() on both sides for portability across mawk (Ubuntu default) and
+    # gawk — IGNORECASE is gawk-only and silently no-ops under mawk.
+    local location
+    location=$(awk 'tolower($1)=="location:"{sub(/^[^:]*:[ \t]*/,""); print; exit}' "$headers_tmp" | tr -d '\r')
+    rm -f "$headers_tmp"
+    local bad=0
+    [ "$status" = "$expected_status" ] || { bad=1; echo "    status:   got '$status', expected '$expected_status'"; }
+    [ "$body" = "$expected_body" ]       || { bad=1; echo "    body:     got '$body', expected '$expected_body'"; }
+    [ "$location" = "$expected_location" ] || { bad=1; echo "    location: got '$location', expected '$expected_location'"; }
+    if [ "$bad" -eq 0 ]; then
+        pass "$name (HTTP $status, body '$body', Location '$location')"
+    else
+        fail "$name"
+    fi
+}
+
 echo "==> Bringing up Docker Compose stack on host port ${HOST_PORT}"
 "${COMPOSE[@]}" up -d --build --quiet-pull >/dev/null
 
@@ -131,26 +164,16 @@ echo "==> Test 1: initial state is 0"
 assert_body_equals "$BASE/" "0"
 
 echo ""
-echo "==> Test 2: POST /counter squares the input"
-result=$(curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" -X POST -H 'Content-Type: application/json' -d '5' "$BASE/counter" || echo "<error>")
-if [ "$result" = "25" ]; then
-    pass "POST /counter 5 → 25"
-else
-    fail "POST /counter 5 → '$result' (expected 25)"
-fi
+echo "==> Test 2: POST /counter squares the input (202 Accepted + Location: /)"
+check_post "POST /counter 5 → 25" "$BASE/counter" '5' '202' '25' '/'
 
 echo ""
 echo "==> Test 3: state roundtrip — GET / returns the squared value"
 assert_body_equals "$BASE/" "25"
 
 echo ""
-echo "==> Test 4: POST /counter 0 saves 0"
-result=$(curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" -X POST -H 'Content-Type: application/json' -d '0' "$BASE/counter" || echo "<error>")
-if [ "$result" = "0" ]; then
-    pass "POST /counter 0 → 0"
-else
-    fail "POST /counter 0 → '$result' (expected 0)"
-fi
+echo "==> Test 4: POST /counter 0 saves 0 (202 Accepted + Location: /)"
+check_post "POST /counter 0 → 0" "$BASE/counter" '0' '202' '0' '/'
 assert_body_equals "$BASE/" "0"
 
 echo ""
@@ -184,24 +207,54 @@ assert_status GET "$BASE/this-route-does-not-exist" 404
 
 echo ""
 echo "==> Test 7: OTel — app emits spans to Jaeger OTLP collector"
-# Drive at least one request so an ASP.NET Core span is produced.
-curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" "$BASE/" >/dev/null || true
-# Jaeger ingests via OTLP gRPC. Query Jaeger's HTTP /api/services from inside
-# the compose network. Poll up to 30s for the service to register.
-seen_traces=""
+# Drive several requests so multiple ASP.NET Core spans are produced. The OTLP
+# exporter buffers and flushes in batches (default ~5s), so a single request
+# may not land before the first poll iteration.
+for _ in 1 2 3 4 5; do
+    curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" "$BASE/" >/dev/null || true
+done
+
+# Jaeger ingests via OTLP gRPC. Query its HTTP query API from inside the
+# compose network so we don't depend on a host-side Jaeger port mapping.
+# Two contracts to assert (service registration alone is necessary-but-not-
+# sufficient — Jaeger registers the service name on the FIRST span ever seen,
+# so a stale service registration can pass while subsequent exports are
+# silently failing):
+#   1. /api/services lists `${OTEL_SERVICE_NAME}` (exporter wired correctly)
+#   2. /api/traces?service=${OTEL_SERVICE_NAME}&limit=1 returns ≥1 trace
+#      with a "traceID" field (spans are actually being delivered)
+seen_service=""
+seen_trace=""
+last_traces_resp=""
+last_services_resp=""
 for _ in $(seq 1 "$E2E_JAEGER_POLL_SECONDS"); do
-    resp=$("${COMPOSE[@]}" exec -T queueprocessor curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" \
-        "http://${JAEGER_HOST}:${JAEGER_QUERY_PORT}/api/services" 2>/dev/null || true)
-    if echo "$resp" | grep -q "\"${OTEL_SERVICE_NAME}\""; then
-        seen_traces=yes
-        break
+    if [ "$seen_service" != yes ]; then
+        last_services_resp=$("${COMPOSE[@]}" exec -T queueprocessor curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" \
+            "http://${JAEGER_HOST}:${JAEGER_QUERY_PORT}/api/services" 2>/dev/null || true)
+        if echo "$last_services_resp" | grep -q "\"${OTEL_SERVICE_NAME}\""; then
+            seen_service=yes
+        fi
+    fi
+    if [ "$seen_service" = yes ] && [ "$seen_trace" != yes ]; then
+        last_traces_resp=$("${COMPOSE[@]}" exec -T queueprocessor curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" \
+            "http://${JAEGER_HOST}:${JAEGER_QUERY_PORT}/api/traces?service=${OTEL_SERVICE_NAME}&limit=1" 2>/dev/null || true)
+        if echo "$last_traces_resp" | grep -q '"traceID"'; then
+            seen_trace=yes
+            break
+        fi
     fi
     sleep "$E2E_POLL_INTERVAL_SECONDS"
 done
-if [ "$seen_traces" = yes ]; then
-    pass "Jaeger registered service '${OTEL_SERVICE_NAME}' — OTel exporter is wired"
+
+if [ "$seen_service" = yes ]; then
+    pass "Jaeger registered service '${OTEL_SERVICE_NAME}'"
 else
-    fail "Jaeger did not see service '${OTEL_SERVICE_NAME}' within ${E2E_JAEGER_POLL_SECONDS}s (last response: '${resp:-<empty>}')"
+    fail "Jaeger did not see service '${OTEL_SERVICE_NAME}' within ${E2E_JAEGER_POLL_SECONDS}s (last response: '${last_services_resp:-<empty>}')"
+fi
+if [ "$seen_trace" = yes ]; then
+    pass "Jaeger returned at least one trace for '${OTEL_SERVICE_NAME}' (spans delivered)"
+else
+    fail "Jaeger returned no traces for '${OTEL_SERVICE_NAME}' within ${E2E_JAEGER_POLL_SECONDS}s (last response: '${last_traces_resp:-<empty>}')"
 fi
 
 echo ""
