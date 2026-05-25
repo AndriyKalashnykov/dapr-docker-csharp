@@ -24,6 +24,9 @@ public sealed class DaprStateStoreFixture : IAsyncInitializer, IAsyncDisposable
     private static readonly ushort DaprGrpcPort =
         ushort.Parse(Environment.GetEnvironmentVariable("DAPR_GRPC_PORT") ?? "50001");
 
+    // Mirrors compose/components/statestore.yaml (no keyPrefix override → defaults
+    // to "appid"). Tests use Guid-suffixed keys so the prefix is irrelevant to
+    // assertions; matching prod removes a fixture-vs-production divergence.
     private const string StateStoreComponent = """
         apiVersion: dapr.io/v1alpha1
         kind: Component
@@ -37,8 +40,24 @@ public sealed class DaprStateStoreFixture : IAsyncInitializer, IAsyncDisposable
             value: redis:6379
           - name: redisPassword
             value: ""
-          - name: keyPrefix
-            value: none
+        """;
+
+    // Mirrors compose/components/pubsub.yaml. Mounted into daprd's resources
+    // directory so EndpointsIntegrationTests can register the [Topic] handler
+    // and publish/poll a roundtrip through the same broker the app uses in prod.
+    private const string PubSubComponent = """
+        apiVersion: dapr.io/v1alpha1
+        kind: Component
+        metadata:
+          name: pubsub
+        spec:
+          type: pubsub.redis
+          version: v1
+          metadata:
+          - name: redisHost
+            value: redis:6379
+          - name: redisPassword
+            value: ""
         """;
 
     private INetwork _network = null!;
@@ -63,6 +82,9 @@ public sealed class DaprStateStoreFixture : IAsyncInitializer, IAsyncDisposable
             .WithResourceMapping(
                 Encoding.UTF8.GetBytes(StateStoreComponent),
                 "/components/statestore.yaml")
+            .WithResourceMapping(
+                Encoding.UTF8.GetBytes(PubSubComponent),
+                "/components/pubsub.yaml")
             .WithCommand(
                 "./daprd",
                 "--app-id", "queue-processor-it",

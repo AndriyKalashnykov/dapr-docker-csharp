@@ -10,6 +10,19 @@ CURRENTTAG     := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "de
 # renovate: datasource=docker depName=minlag/mermaid-cli
 MERMAID_CLI_VERSION := 11.14.0
 
+# act runner image. CI uses GitHub-hosted `ubuntu-latest`; act needs an
+# equivalent locally. Pin the DATED catthehacker tag (immutable, content-
+# addressable) — NOT the floating `act-latest` tag, which would let
+# `docker pull` swap the image out from under us between runs and break
+# reproducibility. The dated tag mirrors the workflow's `runs-on:
+# ubuntu-latest` substrate at the moment of this commit; Renovate bumps
+# the date roughly weekly via the docker datasource (catthehacker publishes
+# `act-latest-YYYYMMDD` snapshots alongside the floating tag).
+# `versioning=loose` because the suffix isn't semver — Renovate compares
+# tags lexicographically and a later date sorts higher.
+# renovate: datasource=docker depName=catthehacker/ubuntu versioning=loose
+ACT_UBUNTU_VERSION := act-latest-20260515
+
 
 # === Project Paths ===
 SOLUTION             := dapr-docker-csharp.slnx
@@ -85,6 +98,17 @@ e2e: deps
 lint: deps
 	@dotnet format "$(SOLUTION)" --verify-no-changes
 	@dotnet build "$(SOLUTION)" -c Release -warnaserror --nologo -v q
+	@# Guard against shell scripts losing +x mode (e.g., a subagent Write that
+	@# defaults to 0644, or a careless `chmod -x`). Without +x, CI invokes the
+	@# script as ./path/to/file.sh and exits 126 "Permission denied" — the kind
+	@# of regression that ci-run wouldn't catch if the e2e job is skipped.
+	@NONEXEC=$$(find scripts e2e -name '*.sh' -not -executable -print 2>/dev/null); \
+	if [ -n "$$NONEXEC" ]; then \
+		echo "Error: shell scripts missing +x mode:"; \
+		echo "$$NONEXEC" | sed 's/^/  /'; \
+		echo "Fix: chmod +x <file>; git add <file>"; \
+		exit 1; \
+	fi
 
 #vulncheck: @ Check for vulnerable NuGet packages
 vulncheck: deps
@@ -148,13 +172,23 @@ ci-run: deps-act
 	fi; \
 	ACT_PORT=$$(shuf -i $(ACT_PORT_MIN)-$(ACT_PORT_MAX) -n 1); \
 	ARTIFACT_PATH=$$(mktemp -d); \
+	trap 'rm -rf "$$ARTIFACT_PATH"' EXIT INT TERM; \
 	for j in static-check build test integration-test e2e ci-pass; do \
 		echo "==> act job: $$j"; \
 		act push --job "$$j" --container-architecture linux/amd64 --pull=false \
+			-P ubuntu-latest=catthehacker/ubuntu:$(ACT_UBUNTU_VERSION) \
 			--secret GITHUB_TOKEN \
 			--artifact-server-port "$$ACT_PORT" \
 			--artifact-server-path "$$ARTIFACT_PATH" || exit $$?; \
 	done
+	@# Note on the loop list: `ci-pass` is the workflow's aggregator (needs:
+	@# all of the above). When act runs `--job ci-pass`, it resolves the
+	@# `needs:` DAG and re-executes every upstream job transitively before
+	@# evaluating the aggregator step. This is intentional duplication —
+	@# kept for portfolio-wide uniformity across all dapr-* / spring-* repos
+	@# where every workflow job is explicit in the ci-run loop, and so a
+	@# future top-level job that ci-pass doesn't `needs:` cannot be silently
+	@# omitted. The cost is one extra full pass at the end of ci-run.
 
 #renovate-bootstrap: @ Install Node + pnpm for Renovate (via mise)
 renovate-bootstrap: deps

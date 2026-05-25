@@ -106,8 +106,8 @@ Three-layer pyramid:
 | Layer | Where | Real dependencies | Command |
 |-------|-------|-------------------|---------|
 | Unit | `tests/queue-processor.tests/EndpointTests.cs` (TUnit + `WebApplicationFactory` + FakeItEasy-mocked `DaprClient`) | none — in-process | `make test` |
-| Integration | `tests/queue-processor.integration.tests/StateStoreIntegrationTests.cs` (TUnit + Testcontainers Redis + daprd container, real `DaprClient` over HTTP/gRPC) | Redis + daprd via Testcontainers | `make integration-test` |
-| E2E | `e2e/e2e-test.sh` (curl + Dapr publish API against the full Docker Compose stack) | Full compose stack: app + daprd + Redis + Jaeger | `make e2e` |
+| Integration | `tests/queue-processor.integration.tests/{StateStoreIntegrationTests,EndpointsIntegrationTests,SubscriptionContractTests}.cs` (TUnit + Testcontainers Redis + daprd container, real `DaprClient` over HTTP/gRPC; `SubscriptionContractTests` asserts the `/dapr/subscribe` wire shape in-process) | Redis + daprd via Testcontainers (none for the subscription contract test) | `make integration-test` |
+| E2E | `e2e/e2e-test.sh` (curl + Dapr publish API against the full Docker Compose stack; asserts POST `/counter` status + `Location` header + body, pub/sub roundtrip, and Jaeger service registration + at least one recorded trace) | Full compose stack: app + daprd + Redis + Jaeger | `make e2e` |
 
 ## Available Make Targets
 
