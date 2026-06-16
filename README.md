@@ -12,11 +12,11 @@
 | Component | Technology |
 |-----------|------------|
 | Language | C# / .NET 10.0 LTS (SDK 10.0.203 via `global.json`, `rollForward: latestFeature`) |
-| Framework | ASP.NET Core (`Microsoft.NET.Sdk.Web`), `Dapr.AspNetCore` 1.17 |
+| Framework | ASP.NET Core (`Microsoft.NET.Sdk.Web`), `Dapr.AspNetCore` 1.18 |
 | Messaging | Dapr pub/sub on Redis Streams |
 | State store | Dapr state on Redis |
-| Tracing | OpenTelemetry → Jaeger via `OpenTelemetry.Extensions.Hosting` 1.15 (OTLP gRPC) |
-| Unit / integration testing | TUnit 1.44 + `WebApplicationFactory` + Testcontainers 4.11 (Redis + daprd) |
+| Tracing | OpenTelemetry → Jaeger via `OpenTelemetry.Extensions.Hosting` 1.16 (OTLP gRPC) |
+| Unit / integration testing | TUnit 1.56 + `WebApplicationFactory` + Testcontainers 4.12 (Redis + daprd) |
 | Mocking | FakeItEasy 9.0 |
 | E2E testing | Docker Compose + bash curl harness + Dapr publish API |
 | Container runtime | Docker Compose v2; production multi-stage `src/queue-processor/Dockerfile` (non-root `app:app`, BuildKit-ARG HEALTHCHECK) |
@@ -69,7 +69,7 @@ C4Container
     title Container Diagram — QueueProcessor on Docker Compose
     Person(operator, "Operator")
     System_Boundary(compose, "docker compose") {
-        Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.17", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic counter")
+        Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.18", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic counter")
         Container(daprd, "Dapr Sidecar", "daprd 1.17.6", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
         ContainerDb(redis, "Redis", "redis:8", "State store · pub/sub broker (Redis Streams)")
         Container(jaeger, "Jaeger", "jaegertracing/jaeger:2.17.0", "Trace collector + UI on :16686")

@@ -84,10 +84,10 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 Pinned in `.mise.toml` and Renovate-tracked:
 
 - **Node**: 22 (used by Renovate validation)
-- **pnpm**: 11.1.1
+- **pnpm**: 11.7.0
 - **jq**: 1.8.1 (`aqua:jqlang/jq`)
-- **act**: 0.2.88 (`aqua:nektos/act`)
-- **trivy**: 0.70.0 (`aqua:aquasecurity/trivy`)
+- **act**: 0.2.89 (`aqua:nektos/act`)
+- **trivy**: 0.71.1 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
 - **mermaid-cli**: 11.14.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
 - **.NET SDK**: 10.0.203 (from `global.json`)
@@ -102,9 +102,9 @@ Three-layer pyramid — each layer covers a distinct surface and runs as its own
 | Integration | `tests/queue-processor.integration.tests/` | Testcontainers Redis + daprd; real `DaprClient` over HTTP/gRPC | `make integration-test` | `integration-test` |
 | E2E | `e2e/e2e-test.sh` | Full Docker Compose stack: app + daprd + Redis + Jaeger | `make e2e` | `e2e` |
 
-- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.44.0 with Microsoft Testing Platform
+- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.56.0 with Microsoft Testing Platform
 - **Mocking**: FakeItEasy 9.0.1 (per portfolio testing rule)
-- **Integration containers**: `Testcontainers` + `Testcontainers.Redis` 4.11
+- **Integration containers**: `Testcontainers` + `Testcontainers.Redis` 4.12
 - **Run discipline**: `dotnet run --project ...` (required for TUnit on .NET 10 SDK; MTP entry point)
 
 ## CI
@@ -129,7 +129,7 @@ A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) prunes old wo
 
 ## Observability
 
-The app uses `OpenTelemetry.Extensions.Hosting` (1.15.x) with ASP.NET Core + HttpClient instrumentation and an OTLP gRPC exporter. The exporter endpoint is read from `OTEL_EXPORTER_OTLP_ENDPOINT` (set to `http://jaeger:4317` in `docker-compose.yaml`). Service name is `queueprocessor` (overridable via `OTEL_SERVICE_NAME`). Spans appear at the Jaeger UI (`http://localhost:16686`) once traffic flows.
+The app uses `OpenTelemetry.Extensions.Hosting` (1.16.x) with ASP.NET Core + HttpClient instrumentation and an OTLP gRPC exporter. The exporter endpoint is read from `OTEL_EXPORTER_OTLP_ENDPOINT` (set to `http://jaeger:4317` in `docker-compose.yaml`). Service name is `queueprocessor` (overridable via `OTEL_SERVICE_NAME`). Spans appear at the Jaeger UI (`http://localhost:16686`) once traffic flows.
 
 The Dapr `Configuration` CR (`compose/configuration/configuration.yaml`) wires daprd's own traces to the same OTLP collector, so end-to-end traces span both the app and the sidecar.
 
