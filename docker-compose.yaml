@@ -29,7 +29,7 @@ services:
     networks:
       - dapr-demo-network
   queueprocessor-dapr:
-    image: daprio/daprd:1.17.6@sha256:f5ba4f35b995d0e066344ff24cac6eae38e6fc89797f5140aa153f6c7b6b6417
+    image: daprio/daprd:1.18.1@sha256:4434e34fd782db17094123be93a78c0b18556b5b1fca1f06448e54df24e51cdf
     command:
       - "./daprd"
       - "--app-id"

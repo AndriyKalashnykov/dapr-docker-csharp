@@ -89,7 +89,7 @@ Pinned in `.mise.toml` and Renovate-tracked:
 - **act**: 0.2.89 (`aqua:nektos/act`)
 - **trivy**: 0.71.1 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
-- **mermaid-cli**: 11.14.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
+- **mermaid-cli**: 11.15.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
 - **.NET SDK**: 10.0.301 (from `global.json`)
 
 ## Testing
@@ -144,6 +144,10 @@ The Dapr `Configuration` CR (`compose/configuration/configuration.yaml`) wires d
 | Command | Purpose |
 |---------|---------|
 | `make image-build` | Build the production image (`queue-processor:<git-describe>` + `:latest`) via multi-stage Dockerfile with non-root `app:app` user and HEALTHCHECK |
+
+## Upgrade Backlog
+
+- [ ] **Reactivate Renovate (Mend Cloud GitHub App).** Renovate stopped running on this repo ~2026-03-30 (last bot PR #27; Dependency Dashboard #4 last updated 2026-03-30, still showing pre-`#32` state). Until the app is reinstalled/reauthorized at <https://github.com/apps/renovate> (or the repo's status is fixed at developer.mend.io), dependency automation and `automerge` are dead — every dependency must be bumped manually, and the `renovate.json` config (incl. the mise `minimumReleaseAge` buffer and `platformAutomerge: false` race-fix) is inert. External GitHub-App OAuth action; cannot be done from the repo. Once reactivated, the dashboard reconciles on the first run and the registration-race fix (`platformAutomerge: false`) takes effect.
 
 ## Skills
 

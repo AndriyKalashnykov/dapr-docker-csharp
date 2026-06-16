@@ -8,7 +8,7 @@ CURRENTTAG     := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "de
 
 # === Tool versions (managed by mise — see .mise.toml) ===
 # renovate: datasource=docker depName=minlag/mermaid-cli
-MERMAID_CLI_VERSION := 11.14.0
+MERMAID_CLI_VERSION := 11.15.0
 
 # act runner image. CI uses GitHub-hosted `ubuntu-latest`; act needs an
 # equivalent locally. Pin the DATED catthehacker tag (immutable, content-

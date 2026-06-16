@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json
 services:
   jaeger:
-    image: jaegertracing/jaeger:2.17.0@sha256:6266573208d665ce5c17483bce0a75d0806480d92c84766d288d0aee885ce708
+    image: jaegertracing/jaeger:2.19.0@sha256:ede4864215be4cd85bd8c3129a2fea6c5713c5653c7282c429dba123014bc68b
     ports:
       - "${JAEGER_QUERY_HOST_PORT:-16686}:16686"
       - "${JAEGER_OTLP_GRPC_HOST_PORT:-4317}:4317"
