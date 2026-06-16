@@ -27,9 +27,12 @@ jobs:
         run: |
           CUTOFF=$(date -u -d "${RETAIN_DAYS} days ago" +%Y-%m-%dT%H:%M:%SZ)
           gh run list --repo "${{ github.repository }}" \
-            --json databaseId,createdAt --limit 200 \
+            --json databaseId,createdAt,workflowName --limit 200 \
           | jq -r --arg cutoff "$CUTOFF" --argjson keep "$KEEP_MINIMUM" \
-              'sort_by(.createdAt) | reverse | .[$keep:] | .[] | select(.createdAt < $cutoff) | .databaseId' \
+              'group_by(.workflowName)
+               | map(sort_by(.createdAt) | reverse | .[$keep:])
+               | add // []
+               | .[] | select(.createdAt < $cutoff) | .databaseId' \
           | xargs -r -I{} gh run delete {} --repo "${{ github.repository }}"
 
   cleanup-caches:
@@ -38,25 +41,47 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Delete caches for deleted branches
+      - name: Delete caches from merged/deleted branches and closed PRs
         run: |
-          # List all active branches
-          gh api --paginate "repos/${{ github.repository }}/branches" --jq '.[].name' > /tmp/active_branches.txt
-          # List all cache refs and delete those whose branch no longer exists
-          gh api --paginate "repos/${{ github.repository }}/actions/caches" \
-            --jq '.actions_caches[] | "\(.id) \(.ref)"' \
-          | while read -r id ref; do
-              # ref looks like 'refs/heads/<branch>' or 'refs/pull/<n>/merge'
+          echo "=== Cleaning caches from non-existent branches and closed/merged PRs ==="
+          # Canonical `gh cache list --json id,ref,key` enumeration (gh >= 2.34).
+          # Each cache ref is one of:
+          #   refs/heads/<branch>     — branch cache; delete when the branch is gone
+          #   refs/pull/<n>/merge     — PR cache;     delete when the PR is closed/merged
+          #   refs/tags/<tag>         — tag cache;    always kept
+          # main (default branch) and tags are always protected; everything else
+          # is deleted only after confirming its source no longer exists/is open.
+          gh cache list --repo "${{ github.repository }}" --json id,ref,key --limit 200 \
+          | jq -r '.[] | "\(.id)\t\(.ref)\t\(.key)"' \
+          | while IFS=$'\t' read -r id ref key; do
               case "$ref" in
+                refs/heads/main|refs/heads/master)
+                  # Default branch — never prune.
+                  continue
+                  ;;
+                refs/tags/*)
+                  # Tag caches — never prune.
+                  continue
+                  ;;
                 refs/heads/*)
-                  branch=${ref#refs/heads/}
-                  if ! grep -qxF "$branch" /tmp/active_branches.txt; then
-                    echo "Deleting cache $id for stale branch $branch"
-                    gh api --method DELETE "repos/${{ github.repository }}/actions/caches/$id" >/dev/null
+                  branch="${ref#refs/heads/}"
+                  # Delete only if the branch no longer exists (API returns 404).
+                  if ! gh api "repos/${{ github.repository }}/branches/${branch}" --silent 2>/dev/null; then
+                    echo "Deleting cache ${key} (branch ${branch} no longer exists)"
+                    gh cache delete "$id" --repo "${{ github.repository }}" 2>/dev/null || true
                   fi
                   ;;
                 refs/pull/*)
-                  echo "Skipping PR cache ref $ref"
+                  pr="${ref#refs/pull/}"; pr="${pr%/merge}"
+                  # Keep caches for OPEN PRs; delete once the PR is closed/merged.
+                  state="$(gh api "repos/${{ github.repository }}/pulls/${pr}" --jq '.state' 2>/dev/null || echo "")"
+                  if [ "$state" != "open" ]; then
+                    echo "Deleting cache ${key} (PR #${pr} is ${state:-gone})"
+                    gh cache delete "$id" --repo "${{ github.repository }}" 2>/dev/null || true
+                  fi
+                  ;;
+                *)
+                  echo "Skipping cache ${key} (unrecognized ref ${ref})"
                   ;;
               esac
             done

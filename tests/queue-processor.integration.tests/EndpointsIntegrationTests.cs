@@ -84,4 +84,24 @@ public sealed class EndpointsIntegrationTests(DaprStateStoreFixture fixture)
         var stored = await fixture.Client.GetStateAsync<int>(Store, CounterKey);
         await Assert.That(stored).IsEqualTo(16);
     }
+
+    [Test]
+    public async Task PostCounter_WithMalformedBody_Returns400_AndLeavesStateUnchanged()
+    {
+        await fixture.Client.SaveStateAsync(Store, CounterKey, 123);
+
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        // Malformed body for `[FromBody] int` — a JSON string, not an int.
+        // Direct HTTP POST (no pub/sub) makes this deterministic vs. an e2e
+        // redelivery-prone negative payload check, against real Dapr.
+        var content = new StringContent("\"abc\"", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("/counter", content);
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+
+        // Bad input must not have corrupted the persisted state.
+        var stored = await fixture.Client.GetStateAsync<int>(Store, CounterKey);
+        await Assert.That(stored).IsEqualTo(123);
+    }
 }

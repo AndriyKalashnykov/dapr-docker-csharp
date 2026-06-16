@@ -69,10 +69,10 @@ C4Container
     title Container Diagram — QueueProcessor on Docker Compose
     Person(operator, "Operator")
     System_Boundary(compose, "docker compose") {
-        Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic counter")
-        Container(daprd, "Dapr Sidecar", "daprd 1.17", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
+        Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.17", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic counter")
+        Container(daprd, "Dapr Sidecar", "daprd 1.17.6", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
         ContainerDb(redis, "Redis", "redis:8", "State store · pub/sub broker (Redis Streams)")
-        Container(jaeger, "Jaeger", "jaegertracing/jaeger:2", "Trace collector + UI on :16686")
+        Container(jaeger, "Jaeger", "jaegertracing/jaeger:2.17.0", "Trace collector + UI on :16686")
     }
     Rel(operator, app, "HTTP", "port 5000 (or HOST_PORT override)")
     Rel(app, daprd, "HTTP / gRPC", "in-pod localhost")
@@ -163,7 +163,7 @@ Run `make help` to see all targets.
 | Target | Description |
 |--------|-------------|
 | `make help` | List available tasks |
-| `make ci` | Run full local CI pipeline (static-check + test + build) |
+| `make ci` | Run full local CI pipeline (static-check + test + integration-test + build) |
 | `make ci-run` | Run GitHub Actions workflow locally using [act](https://github.com/nektos/act) |
 | `make deps` | Install required tools (idempotent) |
 | `make deps-act` | Install act for local CI runs |
@@ -182,7 +182,7 @@ GitHub Actions runs on every push to `main`, tags `v*`, pull requests, `workflow
 | **build** | after static-check | `make build` |
 | **test** | after static-check | `make test` (unit) |
 | **integration-test** | after static-check | `make integration-test` (Testcontainers Redis + daprd) |
-| **e2e** | after build | `make e2e` (Docker Compose full-stack roundtrip) |
+| **e2e** | after build + test | `make e2e` (Docker Compose full-stack roundtrip) |
 | **ci-pass** | always | Aggregator status check for branch protection / Rulesets |
 
 ### Required Secrets and Variables

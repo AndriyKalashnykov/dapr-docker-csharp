@@ -58,12 +58,13 @@ help:
 deps:
 	@command -v dotnet >/dev/null 2>&1 || { echo "Error: .NET SDK required. See https://dotnet.microsoft.com/download"; exit 1; }
 	@command -v docker >/dev/null 2>&1 || { echo "Error: Docker required. See https://docs.docker.com/get-docker/"; exit 1; }
-	@command -v mise   >/dev/null 2>&1 || { echo "Installing mise..."; curl -fsSL https://mise.run | sh; }
+	@# CI installs mise via jdx/mise-action; only bootstrap the binary locally.
+	@if [ -z "$$CI" ]; then command -v mise >/dev/null 2>&1 || { echo "Installing mise..."; curl -fsSL https://mise.run | sh; }; fi
 	@mise install --yes
 
 #deps-act: @ Install act for local CI runs (via mise)
 deps-act: deps
-	@mise install --yes aqua:nektos/act
+	@# act is pinned in .mise.toml and installed by `deps`; nothing extra needed.
 
 #clean: @ Remove build artifacts
 clean:
@@ -116,14 +117,12 @@ vulncheck: deps
 
 #trivy-fs: @ Trivy filesystem scan (HIGH+CRITICAL vulnerabilities + misconfigs)
 trivy-fs: deps
-	@mise install --yes aqua:aquasecurity/trivy >/dev/null
 	@trivy fs --quiet --severity HIGH,CRITICAL --exit-code 1 \
 		--skip-dirs bin --skip-dirs obj --skip-dirs node_modules \
 		--scanners vuln,misconfig .
 
 #secrets: @ Scan working tree + git history for committed secrets (gitleaks)
 secrets: deps
-	@mise install --yes aqua:gitleaks/gitleaks >/dev/null
 	@gitleaks detect --no-banner --redact --exit-code 1
 
 #mermaid-lint: @ Lint Mermaid diagrams embedded in Markdown files
@@ -192,7 +191,7 @@ ci-run: deps-act
 
 #renovate-bootstrap: @ Install Node + pnpm for Renovate (via mise)
 renovate-bootstrap: deps
-	@mise install --yes node pnpm
+	@# Node + pnpm are pinned in .mise.toml and installed by `deps`.
 
 #renovate-validate: @ Validate Renovate configuration
 renovate-validate: renovate-bootstrap

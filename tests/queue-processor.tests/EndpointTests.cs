@@ -105,4 +105,57 @@ public class EndpointTests
                 .SaveStateAsync("statestore", "counter", 9, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
             .MustHaveHappenedOnceExactly();
     }
+
+    [Test]
+    public async Task PostCounter_WithNonIntegerBody_Returns400()
+    {
+        await using var factory = new QueueProcessorWebFactory();
+        using var client = factory.CreateClient();
+
+        // Malformed body for `[FromBody] int` — a JSON string, not an int.
+        // Minimal-API model binding rejects it before the handler runs.
+        var content = new StringContent("\"abc\"", System.Text.Encoding.UTF8, "application/json");
+        var response = await client.PostAsync("/counter", content);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
+
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", A<int>.Ignored, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .MustNotHaveHappened();
+    }
+
+    [Test]
+    public async Task PostCounter_WithMaxValue_OverflowsUnchecked()
+    {
+        await using var factory = new QueueProcessorWebFactory();
+        using var client = factory.CreateClient();
+
+        // Documents the UNCHECKED-arithmetic contract: counter * counter wraps.
+        var expected = unchecked(int.MaxValue * int.MaxValue);
+
+        var response = await client.PostAsJsonAsync("/counter", int.MaxValue);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+        var result = await response.Content.ReadFromJsonAsync<int>();
+        await Assert.That(result).IsEqualTo(expected);
+
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", expected, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .MustHaveHappenedOnceExactly();
+    }
+
+    [Test]
+    public async Task PostCounter_WhenStateStoreThrows_Returns500()
+    {
+        await using var factory = new QueueProcessorWebFactory();
+        A.CallTo(() => factory.MockDaprClient
+                .SaveStateAsync("statestore", "counter", A<int>.Ignored, A<StateOptions?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .Throws(new Exception("redis down"));
+
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/counter", 5);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.InternalServerError);
+    }
 }
