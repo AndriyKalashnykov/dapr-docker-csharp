@@ -39,6 +39,7 @@ E2E_JAEGER_POLL_SECONDS="${E2E_JAEGER_POLL_SECONDS:-30}"
 E2E_CURL_MAX_TIME_SECONDS="${E2E_CURL_MAX_TIME_SECONDS:-5}"
 E2E_PROBE_MAX_TIME_SECONDS="${E2E_PROBE_MAX_TIME_SECONDS:-2}"
 E2E_POLL_INTERVAL_SECONDS="${E2E_POLL_INTERVAL_SECONDS:-1}"
+E2E_POISON_SETTLE_SECONDS="${E2E_POISON_SETTLE_SECONDS:-5}"
 
 COMPOSE=(docker compose \
     --file docker-compose.yaml \
@@ -256,6 +257,42 @@ if [ "$seen_trace" = yes ]; then
 else
     fail "Jaeger returned no traces for '${OTEL_SERVICE_NAME}' within ${E2E_JAEGER_POLL_SECONDS}s (last response: '${last_traces_resp:-<empty>}')"
 fi
+
+echo ""
+echo "==> Test 8: poison payload — malformed pub/sub message does not corrupt state"
+# Contract: the subscribed handler binds the message body to `[FromBody] int`
+# (Program.cs `MapPost("/counter", ([FromBody] int counter, ...))`). A
+# non-integer body fails ASP.NET Core model binding with HTTP 400 BEFORE the
+# handler runs, so `SaveStateAsync` is never reached — a malformed message can
+# NEVER mutate the counter.
+#
+# Determinism rationale: Dapr's Redis Streams pub/sub gives at-least-once
+# delivery and will redeliver an un-acked (errored) message — defaults
+# processingTimeout=15s, redeliverInterval=60s. Every redelivery of the same
+# poison payload also 400s, so no successful processing ever occurs and the
+# stored value is invariant under any number of retries. We therefore assert
+# the STATE-UNCHANGED invariant, not a timing-dependent outcome: this is
+# deterministic regardless of how many (if any) redeliveries fire within the
+# settle window. A leftover poison message in the Redis PEL is harmless — the
+# stack is torn down with `down -v` on exit.
+
+# 1. Establish a known-good baseline state via a valid POST (6 → 36).
+check_post "POST /counter 6 → 36 (poison baseline)" "$BASE/counter" '6' '202' '36' '/'
+assert_body_equals "$BASE/" "36"
+
+# 2. Publish a MALFORMED payload (a JSON string, not an integer) on the same
+#    pubsub/topic and rawPayload=false path Test 5 uses. Dapr accepts the
+#    publish (the broker doesn't validate app schema) and delivers it; the
+#    subscriber 400s on bind.
+"${COMPOSE[@]}" exec -T queueprocessor curl -sf --max-time "$E2E_CURL_MAX_TIME_SECONDS" \
+    "http://${DAPR_HOST}:${DAPR_HTTP_PORT}/v1.0/publish/${PUBSUB_NAME}/${TOPIC_NAME}?metadata.rawPayload=false" \
+    -H 'Content-Type: application/json' --data '"notanumber"' \
+    || fail "Dapr publish of malformed payload to ${PUBSUB_NAME}/${TOPIC_NAME} failed"
+
+# 3. Give any delivery/redelivery attempt a bounded window to run, then assert
+#    the state is STILL the baseline — the poison message corrupted nothing.
+sleep "$E2E_POISON_SETTLE_SECONDS"
+assert_body_equals "$BASE/" "36"
 
 echo ""
 echo "==> Results: ${PASS} passed, ${FAIL} failed"

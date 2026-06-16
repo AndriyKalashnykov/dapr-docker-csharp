@@ -4,7 +4,7 @@
 
 Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, running via Docker Compose.
 
-- **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.201`)
+- **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.203`)
 - **Framework**: ASP.NET Core with Dapr.AspNetCore
 - **Infrastructure**: Docker Compose (multi-file), Dapr sidecar, Redis, Jaeger (OTel tracing)
 - **Solution**: `dapr-docker-csharp.slnx` (.NET 10 XML format)
@@ -13,7 +13,7 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
   - `tests/queue-processor.tests/` — unit (TUnit + FakeItEasy + WebApplicationFactory)
   - `tests/queue-processor.integration.tests/` — integration (TUnit + Testcontainers Redis + daprd, real `DaprClient`)
 - **E2E**: `e2e/e2e-test.sh` — Docker Compose + curl + Dapr publish API
-- **Version manager**: mise (`.mise.toml` pins Node, pnpm, act, trivy, gitleaks)
+- **Version manager**: mise (`.mise.toml` pins Node, pnpm, jq, act, trivy, gitleaks)
 
 ## Build & Dev Commands
 
@@ -102,7 +102,7 @@ Three-layer pyramid — each layer covers a distinct surface and runs as its own
 | Integration | `tests/queue-processor.integration.tests/` | Testcontainers Redis + daprd; real `DaprClient` over HTTP/gRPC | `make integration-test` | `integration-test` |
 | E2E | `e2e/e2e-test.sh` | Full Docker Compose stack: app + daprd + Redis + Jaeger | `make e2e` | `e2e` |
 
-- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.28.0 with Microsoft Testing Platform
+- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.44.0 with Microsoft Testing Platform
 - **Mocking**: FakeItEasy 9.0.1 (per portfolio testing rule)
 - **Integration containers**: `Testcontainers` + `Testcontainers.Redis` 4.11
 - **Run discipline**: `dotnet run --project ...` (required for TUnit on .NET 10 SDK; MTP entry point)
@@ -118,7 +118,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 | **build** | static-check | `make build` |
 | **test** | static-check | `make test` (unit) |
 | **integration-test** | static-check | `make integration-test` (Testcontainers) |
-| **e2e** | build | `make e2e` (Docker Compose full-stack) |
+| **e2e** | build, test | `make e2e` (Docker Compose full-stack) |
 | **ci-pass** | all of the above (always) | Aggregator status check (target for branch protection / Rulesets) |
 
 Permissions: workflow-level `contents: read` + `pull-requests: read` (for `paths-filter`). SDK version from `global.json`. NuGet caching via `packages.lock.json`. mise-action installs `.mise.toml`-pinned tools for the static-check job.
