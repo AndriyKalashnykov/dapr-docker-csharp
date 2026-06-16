@@ -4,7 +4,7 @@
 
 Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, running via Docker Compose.
 
-- **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.203`)
+- **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.301`)
 - **Framework**: ASP.NET Core with Dapr.AspNetCore
 - **Infrastructure**: Docker Compose (multi-file), Dapr sidecar, Redis, Jaeger (OTel tracing)
 - **Solution**: `dapr-docker-csharp.slnx` (.NET 10 XML format)
@@ -90,7 +90,7 @@ Pinned in `.mise.toml` and Renovate-tracked:
 - **trivy**: 0.71.1 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
 - **mermaid-cli**: 11.14.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
-- **.NET SDK**: 10.0.203 (from `global.json`)
+- **.NET SDK**: 10.0.301 (from `global.json`)
 
 ## Testing
 
