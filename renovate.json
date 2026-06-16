@@ -110,11 +110,12 @@
       ]
     },
     {
-      "description": "Group mise-managed tools",
+      "description": "Group mise tool bumps + hold each new version 3 days so the upstream GitHub Release artifacts that mise's aqua:/github-tags backend installs are published before the PR opens — prevents the tag-before-publish 404 on `mise install` (trivy/act/gitleaks are aqua: tools that push the git tag before the release).",
       "matchManagers": [
         "mise"
       ],
-      "groupName": "mise tools"
+      "groupName": "mise tools",
+      "minimumReleaseAge": "3 days"
     },
     {
       "description": "Group .NET test dependencies (TUnit, Testcontainers, FakeItEasy)",
