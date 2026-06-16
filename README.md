@@ -11,7 +11,7 @@
 
 | Component | Technology |
 |-----------|------------|
-| Language | C# / .NET 10.0 LTS (SDK 10.0.203 via `global.json`, `rollForward: latestFeature`) |
+| Language | C# / .NET 10.0 LTS (SDK 10.0.301 via `global.json`, `rollForward: latestFeature`) |
 | Framework | ASP.NET Core (`Microsoft.NET.Sdk.Web`), `Dapr.AspNetCore` 1.18 |
 | Messaging | Dapr pub/sub on Redis Streams |
 | State store | Dapr state on Redis |
