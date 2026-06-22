@@ -43,6 +43,21 @@ public class EndpointTests
     }
 
     [Test]
+    public async Task GetRoot_WhenStateStoreThrows_Returns500()
+    {
+        await using var factory = new QueueProcessorWebFactory();
+        A.CallTo(() => factory.MockDaprClient
+                .GetStateAsync<int>("statestore", "counter", A<ConsistencyMode?>.Ignored, A<IReadOnlyDictionary<string, string>?>.Ignored, A<CancellationToken>.Ignored))
+            .Throws(new Exception("redis down"));
+
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/");
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.InternalServerError);
+    }
+
+    [Test]
     public async Task PostCounter_SquaresValue_AndSavesState()
     {
         await using var factory = new QueueProcessorWebFactory();
