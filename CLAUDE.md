@@ -6,7 +6,7 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 
 - **Language**: C# / .NET 10.0 (`global.json` pins SDK `10.0.301`)
 - **Framework**: ASP.NET Core with Dapr.AspNetCore
-- **Infrastructure**: Docker Compose (multi-file), Dapr sidecar, Redis, Jaeger (OTel tracing)
+- **Infrastructure**: Docker Compose (`docker-compose.yaml` + `compose/dapr-docker-compose.yaml`), Dapr sidecar, Redis, Jaeger (OTel tracing)
 - **Solution**: `dapr-docker-csharp.slnx` (.NET 10 XML format)
 - **App project**: `src/queue-processor/`
 - **Test projects**:
@@ -116,12 +116,13 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 | **changes** | — | `dorny/paths-filter` short-circuits doc-only changes |
 | **static-check** | changes (code) | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
 | **build** | static-check | `make build` |
+| **image-build** | static-check | `make image-build` (build-only Dockerfile validation, no push) |
 | **test** | static-check | `make test` (unit) |
 | **integration-test** | static-check | `make integration-test` (Testcontainers) |
 | **e2e** | build, test | `make e2e` (Docker Compose full-stack) |
 | **ci-pass** | all of the above (always) | Aggregator status check (target for branch protection / Rulesets) |
 
-Permissions: workflow-level `contents: read` + `pull-requests: read` (for `paths-filter`). SDK version from `global.json`. NuGet caching via `packages.lock.json`. mise-action installs `.mise.toml`-pinned tools for the static-check job.
+Permissions: workflow-level `contents: read` + `pull-requests: read` (for `paths-filter`). SDK version from `global.json`. NuGet caching via `packages.lock.json`. mise-action installs `.mise.toml`-pinned tools for every make-running job.
 
 **Toolchain split (documented exception to the "mise-action over `setup-*`" portfolio rule)**: `actions/setup-dotnet@<sha>` is retained alongside `jdx/mise-action` because (a) `global.json`'s `rollForward: latestFeature` is honored at install time by setup-dotnet — mise would require an exact `.mise.toml` pin and lose the rollForward semantics, and (b) setup-dotnet's `cache: true` + `packages.lock.json` is the canonical NuGet cache. mise-action owns the non-.NET surface (Node, pnpm, jq, act, trivy, gitleaks).
 

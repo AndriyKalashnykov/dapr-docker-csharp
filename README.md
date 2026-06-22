@@ -21,7 +21,7 @@
 | E2E testing | Docker Compose + bash curl harness + Dapr publish API |
 | Container runtime | Docker Compose v2; production multi-stage `src/queue-processor/Dockerfile` (non-root `app:app`, BuildKit-ARG HEALTHCHECK) |
 | Static analysis | `dotnet format`, `dotnet build -warnaserror`, `dotnet list package --vulnerable`, Trivy filesystem scan, gitleaks, mermaid-cli |
-| CI | GitHub Actions (changes → static-check → build/test/integration-test → e2e → ci-pass), `dorny/paths-filter` + `jdx/mise-action` |
+| CI | GitHub Actions (changes → static-check → build/image-build/test/integration-test → e2e → ci-pass), `dorny/paths-filter` + `jdx/mise-action` |
 | Dependency mgmt | Renovate (`automergeType: pr`, squash) — covers NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex |
 | Version manager | mise (`.mise.toml` pins Node, pnpm, jq, act, trivy, gitleaks) |
 
@@ -180,6 +180,7 @@ GitHub Actions runs on every push to `main`, tags `v*`, pull requests, `workflow
 | **changes** | every run | `dorny/paths-filter` short-circuits doc-only changes |
 | **static-check** | code change or tag push | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
 | **build** | after static-check | `make build` |
+| **image-build** | after static-check | `make image-build` (build-only Dockerfile validation, no push) |
 | **test** | after static-check | `make test` (unit) |
 | **integration-test** | after static-check | `make integration-test` (Testcontainers Redis + daprd) |
 | **e2e** | after build + test | `make e2e` (Docker Compose full-stack roundtrip) |
