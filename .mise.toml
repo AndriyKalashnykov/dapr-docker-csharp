@@ -1,7 +1,7 @@
 [tools]
 node = "22"
-pnpm = "11.7.0"
-"aqua:jqlang/jq" = "1.8.1"
+pnpm = "11.8.0"
+"aqua:jqlang/jq" = "1.8.2"
 "aqua:nektos/act" = "0.2.89"
-"aqua:aquasecurity/trivy" = "0.71.1"
+"aqua:aquasecurity/trivy" = "0.71.2"
 "aqua:gitleaks/gitleaks" = "8.30.1"
