@@ -1,5 +1,5 @@
 [tools]
-node = "22"
+node = "24"
 pnpm = "11.8.0"
 "aqua:jqlang/jq" = "1.8.2"
 "aqua:nektos/act" = "0.2.89"
