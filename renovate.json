@@ -7,6 +7,9 @@
   "commitMessagePrefix": "chore(all): ",
   "commitMessageAction": "update",
   "commitBody": "Signed-off-by: Renovate Bot <bot@renovateapp.com>",
+  "description": [
+    "platformAutomerge is deliberately false: main's required check is `ci-pass`; platformAutomerge=true would merge in the brief window before the check registers (registration race). Do not flip to true."
+  ],
   "labels": [
     "dependencies"
   ],
@@ -37,6 +40,12 @@
     "**/bin/**",
     "**/obj/**"
   ],
+  "docker-compose": {
+    "description": "Additive pattern: the default docker-compose fileMatch does not match a `dapr-`-prefixed basename, so track the compose/ overlay explicitly (its jaegertracing/jaeger image is referenced nowhere else).",
+    "managerFilePatterns": [
+      "/^compose/.+\\.ya?ml$/"
+    ]
+  },
   "vulnerabilityAlerts": {
     "labels": [
       "security"
@@ -54,7 +63,7 @@
         "scripts/**/*.bash"
       ],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z0-9-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\s*\\n\\s*[A-Z_]+\\s*[:?]?=\\s*(?<currentValue>[\\w][\\w.+-]*)"
+        "#\\s*renovate:\\s*datasource=(?<datasource>[a-z0-9-]+)\\s+depName=(?<depName>[^\\s]+?)(?:\\s+versioning=(?<versioning>[^\\s]+?))?(?:\\s+extractVersion=(?<extractVersion>[^\\s]+?))?\\s*\\n\\s*[A-Z0-9_]+\\s*[:?]?=\\s*(?<currentValue>[\\w][\\w.+-]*)"
       ]
     },
     {

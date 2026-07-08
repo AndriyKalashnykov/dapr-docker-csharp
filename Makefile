@@ -40,17 +40,28 @@ INTEGRATION_TEST_PROJECT := tests/queue-processor.integration.tests/queue-proces
 # === Docker Compose ===
 DOCKER_COMPOSE := docker compose --file docker-compose.yaml --file compose/dapr-docker-compose.yaml
 
+# Load operator overrides from .env (gitignored) BEFORE the `?=` defaults, so
+# `.env` is authoritative for `make` too — not just for `docker compose` (which
+# auto-loads it). `-include` (leading `-`) silently skips a missing .env, in
+# which case the `?=` defaults apply; a value present in .env sets the var first,
+# so the later `?=` is a no-op. Keep .env shell-clean `KEY=value` (escape `$` as `$$`).
+-include .env
+
 # === Env-driven defaults (mirror .env.example; `?=` lets env override) ===
-HOST_PORT          ?= 5000
-APP_INTERNAL_PORT  ?= 5000
-DAPR_HTTP_PORT     ?= 3500
-PUBSUB_NAME        ?= pubsub
-TOPIC_NAME         ?= counter
-APP_HOST           ?= localhost
-DAPR_HOST          ?= localhost
-HEALTHCHECK_HOST   ?= localhost
-ACT_PORT_MIN       ?= 40000
-ACT_PORT_MAX       ?= 59999
+HOST_PORT                   ?= 5000
+APP_INTERNAL_PORT           ?= 5000
+REDIS_HOST_PORT             ?= 6379
+JAEGER_QUERY_HOST_PORT      ?= 16686
+JAEGER_OTLP_GRPC_HOST_PORT  ?= 4317
+JAEGER_OTLP_HTTP_HOST_PORT  ?= 4318
+DAPR_HTTP_PORT              ?= 3500
+PUBSUB_NAME                 ?= pubsub
+TOPIC_NAME                  ?= counter
+APP_HOST                    ?= localhost
+DAPR_HOST                   ?= localhost
+HEALTHCHECK_HOST            ?= localhost
+ACT_PORT_MIN                ?= 40000
+ACT_PORT_MAX                ?= 59999
 
 # Ensure mise-managed shims are on PATH for tools installed via .mise.toml
 export PATH := $(HOME)/.local/share/mise/shims:$(HOME)/.local/bin:$(PATH)
@@ -168,7 +179,7 @@ diagrams: $(DIAGRAM_OUT)
 $(DIAGRAM_DIR)/out/%.png: $(DIAGRAM_DIR)/%.puml $(DIAGRAM_STAMP)
 	@docker image inspect plantuml/plantuml:$(PLANTUML_VERSION) >/dev/null 2>&1 \
 		|| docker pull -q plantuml/plantuml:$(PLANTUML_VERSION) >/dev/null
-	docker run --rm -v "$(CURDIR)/$(DIAGRAM_DIR):/work" -w /work \
+	@docker run --rm -v "$(CURDIR)/$(DIAGRAM_DIR):/work" -w /work \
 		--user $$(id -u):$$(id -g) \
 		-e HOME=/tmp -e _JAVA_OPTIONS=-Duser.home=/tmp \
 		plantuml/plantuml:$(PLANTUML_VERSION) \
@@ -181,7 +192,7 @@ $(DIAGRAM_STAMP):
 
 #diagrams-clean: @ Remove rendered diagram artefacts
 diagrams-clean:
-	rm -rf $(DIAGRAM_DIR)/out
+	@rm -rf $(DIAGRAM_DIR)/out
 
 #diagrams-check: @ Verify committed diagram PNGs match current .puml source (CI drift gate)
 diagrams-check: diagrams
@@ -198,8 +209,32 @@ diagrams-check: diagrams
 		echo "$$U"; exit 1; }
 	@echo "diagrams-check: rendered output matches committed source."
 
+#check-env: @ STOPPER gate — fail if the committed .env.example source-of-truth is missing
+check-env:
+	@test -f .env.example || { \
+		echo "ERROR: .env.example is missing (BLOCKING per rules/common/configuration.md)."; \
+		echo "       It is the committed source of truth for every operator-tunable value."; \
+		exit 1; }
+
+#check-ports: @ Fail early if a fixed host port bound by `make start` is already in use
+check-ports:
+	@for pair in "HOST_PORT $(HOST_PORT)" "REDIS_HOST_PORT $(REDIS_HOST_PORT)" \
+			"JAEGER_QUERY_HOST_PORT $(JAEGER_QUERY_HOST_PORT)" \
+			"JAEGER_OTLP_GRPC_HOST_PORT $(JAEGER_OTLP_GRPC_HOST_PORT)" \
+			"JAEGER_OTLP_HTTP_HOST_PORT $(JAEGER_OTLP_HTTP_HOST_PORT)"; do \
+		name=$${pair%% *}; port=$${pair##* }; \
+		if (exec 3<>/dev/tcp/127.0.0.1/$$port) 2>/dev/null; then \
+			exec 3>&- 3<&- 2>/dev/null || true; \
+			holder=$$(docker ps --format '{{.Names}} ({{.Ports}})' 2>/dev/null | grep ":$$port->" || echo "an unknown process"); \
+			echo "ERROR: port $$port ($$name) is already in use by: $$holder"; \
+			echo "       Free it, or override $$name (e.g. 'make start $$name=<free-port>' or set it in .env)."; \
+			exit 1; \
+		fi; \
+	done
+	@echo "check-ports: all fixed host ports free."
+
 #static-check: @ Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check)
-static-check: lint vulncheck trivy-fs secrets mermaid-lint diagrams-check
+static-check: check-env lint vulncheck trivy-fs secrets mermaid-lint diagrams-check
 
 #format: @ Auto-fix code formatting
 format: deps
@@ -224,7 +259,7 @@ ci-run: deps-act
 	ACT_PORT=$$(shuf -i $(ACT_PORT_MIN)-$(ACT_PORT_MAX) -n 1); \
 	ARTIFACT_PATH=$$(mktemp -d); \
 	trap 'rm -rf "$$ARTIFACT_PATH"' EXIT INT TERM; \
-	for j in static-check build test integration-test e2e ci-pass; do \
+	for j in static-check build image-build test integration-test e2e ci-pass; do \
 		echo "==> act job: $$j"; \
 		act push --job "$$j" --container-architecture linux/amd64 --pull=false \
 			-P ubuntu-latest=catthehacker/ubuntu:$(ACT_UBUNTU_VERSION) \
@@ -255,7 +290,7 @@ renovate-validate: renovate-bootstrap
 	fi
 
 #start: @ Start Docker Compose services
-start: deps
+start: deps check-ports
 	@$(DOCKER_COMPOSE) up -d
 
 #stop: @ Stop Docker Compose services
@@ -317,7 +352,7 @@ release:
 
 .PHONY: help deps deps-act clean build image-build test integration-test e2e \
 	lint vulncheck trivy-fs secrets mermaid-lint diagrams diagrams-clean diagrams-check \
-	static-check format run ci ci-run \
+	check-env check-ports static-check format run ci ci-run \
 	renovate-bootstrap renovate-validate \
 	start stop restart pull \
 	dapr-logs dapr-pub dapr-counter dapr-get \
