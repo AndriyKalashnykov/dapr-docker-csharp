@@ -144,9 +144,9 @@
       ]
     },
     {
-      "description": "Makefile docker dev-tool pins (mermaid-cli, catthehacker/ubuntu) are interpolated into `docker run image:$(VAR)` recipes with no digest. Suppress docker:pinDigests to avoid a pinDigest x version-bump branch collision.",
-      "matchFileNames": [
-        "Makefile"
+      "description": "Suppress docker:pinDigests for ALL custom.regex docker pins: the Makefile dev-tool images (mermaid-cli/catthehacker interpolated into `docker run image:$(VAR)`, no digest) AND the C# Testcontainers fixture's tag-only daprd/redis refs. The custom.regex manager cannot write an @sha256 digest onto these, so docker:pinDigests errors the branch forever ('update failure' — the dapr-sidecar + runtime-infra-images pin branches). Scope by manager+datasource (NOT one file) so future custom.regex docker pins are covered too.",
+      "matchManagers": [
+        "custom.regex"
       ],
       "matchDatasources": [
         "docker"

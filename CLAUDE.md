@@ -150,10 +150,6 @@ The Dapr `Configuration` CR (`compose/configuration/configuration.yaml`) wires d
 |---------|---------|
 | `make image-build` | Build the production image (`queue-processor:<git-describe>` + `:latest`) via multi-stage Dockerfile with non-root `app:app` user and HEALTHCHECK |
 
-## Upgrade Backlog
-
-- [ ] **Reactivate Renovate (Mend Cloud GitHub App).** Renovate stopped running on this repo ~2026-03-30 (last bot PR #27; Dependency Dashboard #4 last updated 2026-03-30, still showing pre-`#32` state). Until the app is reinstalled/reauthorized at <https://github.com/apps/renovate> (or the repo's status is fixed at developer.mend.io), dependency automation and `automerge` are dead — every dependency must be bumped manually, and the `renovate.json` config (incl. the mise `minimumReleaseAge` buffer and `platformAutomerge: false` race-fix) is inert. External GitHub-App OAuth action; cannot be done from the repo. Once reactivated, the dashboard reconciles on the first run and the registration-race fix (`platformAutomerge: false`) takes effect.
-
 ## Skills
 
 Use the following skills when working on related files:
