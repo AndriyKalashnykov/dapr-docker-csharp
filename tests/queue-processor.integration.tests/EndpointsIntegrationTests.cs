@@ -104,4 +104,45 @@ public sealed class EndpointsIntegrationTests(DaprStateStoreFixture fixture)
         var stored = await fixture.Client.GetStateAsync<int>(Store, CounterKey);
         await Assert.That(stored).IsEqualTo(123);
     }
+
+    [Test]
+    public async Task CounterTopic_DeliveredAsCloudEvent_IsSquaredAndPersisted()
+    {
+        // The tests above POST a raw int, which bypasses app.UseCloudEvents().
+        // daprd, however, delivers a published `counter` message to the
+        // [Topic("pubsub","counter")] handler as a CloudEvent envelope
+        // (application/cloudevents+json). This exercises that delivery-side
+        // contract end to end: UseCloudEvents unwrapping + the topic route +
+        // a real daprd state save. (The daprd->app HTTP transport itself is
+        // covered by the e2e suite; SubscriptionContractTests covers the
+        // /dapr/subscribe wire that tells daprd to route counter -> /counter.)
+        await fixture.Client.DeleteStateAsync(Store, CounterKey);
+
+        await using var factory = CreateFactory();
+        using var client = factory.CreateClient();
+
+        // Shape mirrors what daprd POSTs for a published `counter` message.
+        var cloudEvent = new
+        {
+            specversion = "1.0",
+            type = "com.dapr.event.sent",
+            source = "queue-processor-it",
+            id = Guid.NewGuid().ToString(),
+            datacontenttype = "application/json",
+            pubsubname = "pubsub",
+            topic = "counter",
+            data = 9,
+        };
+        var content = new StringContent(
+            System.Text.Json.JsonSerializer.Serialize(cloudEvent),
+            System.Text.Encoding.UTF8,
+            "application/cloudevents+json");
+        var response = await client.PostAsync("/counter", content);
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.Accepted);
+
+        // 9 squared, unwrapped from the CloudEvent `data` field and persisted.
+        var stored = await fixture.Client.GetStateAsync<int>(Store, CounterKey);
+        await Assert.That(stored).IsEqualTo(81);
+    }
 }
