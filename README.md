@@ -60,9 +60,9 @@ make deps
 
 An operator drives the system over HTTP — direct `POST /counter` and `GET /`, plus publishes through the Dapr publish API. Both the QueueProcessor and its Dapr sidecar export OpenTelemetry traces to Jaeger.
 
-### Container View
+### Container Diagram
 
-<p align="center"><img src="docs/diagrams/out/c4-container.png" alt="Container View — QueueProcessor on Docker Compose" width="820"></p>
+<p align="center"><img src="docs/diagrams/out/c4-container.png" alt="Container Diagram — QueueProcessor on Docker Compose" width="820"></p>
 
 Component highlights:
 

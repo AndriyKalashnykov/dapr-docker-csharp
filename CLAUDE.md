@@ -150,6 +150,15 @@ The Dapr `Configuration` CR (`compose/configuration/configuration.yaml`) wires d
 |---------|---------|
 | `make image-build` | Build the production image (`queue-processor:<git-describe>` + `:latest`) via multi-stage Dockerfile with non-root `app:app` user and HEALTHCHECK |
 
+## Upgrade Backlog
+
+Deferred items from `/upgrade-analysis` (2026-07-08). Everything else — NuGet
+packages, .NET SDK (10.0.301, channel-head, LTS to 2028-11-14), all 6 mise
+tools, all 5 Docker images, all 5 CI action SHAs, Dapr 1.18 — is exactly current
+(Renovate-automerge, alive; bot PRs merged 2026-07-08).
+
+- [ ] **`ACT_UBUNTU_VERSION` (`catthehacker/ubuntu:act-latest-20260515`) is Renovate-untracked AND ~6 weeks stale.** The `# renovate:` regex *matches* it, but Renovate drops it at version-resolution: `act-latest-YYYYMMDD` is unorderable under `versioning=loose`, so it never reaches the Dependency Dashboard's Detected Dependencies (only `mermaid-cli` + `plantuml` show under the `regex` manager for the Makefile). Newer tags exist: `act-latest-20260622`, `act-latest-20260629`. **Fix:** change the annotation to `versioning=regex:^act-latest-(?<major>\d{4})(?<minor>\d{2})(?<patch>\d{2})$` (orders the date, excludes `act-latest-dev`) so Renovate can track+bump it — then manually bump the pin to the newest dated tag. Low criticality: this image is used only by the local `make ci-run` (act runner), not shipped or security-facing.
+
 ## Skills
 
 Use the following skills when working on related files:
