@@ -32,6 +32,7 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 | `make mermaid-lint` | Validate Mermaid diagrams in Markdown |
 | `make diagrams` | Render C4 PlantUML architecture diagrams (`docs/diagrams/*.puml`) to PNG |
 | `make diagrams-check` | Drift gate: committed PNGs must match current `.puml` source (in `static-check`) |
+| `make diagrams-clean` | Remove rendered diagram artefacts |
 | `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts (bin/obj) |
@@ -85,13 +86,13 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 
 Pinned in `.mise.toml` and Renovate-tracked:
 
-- **Node**: 22 (used by Renovate validation)
-- **pnpm**: 11.8.0
+- **Node**: 24 (used by Renovate validation)
+- **pnpm**: 11.10.0
 - **jq**: 1.8.2 (`aqua:jqlang/jq`)
 - **act**: 0.2.89 (`aqua:nektos/act`)
-- **trivy**: 0.71.2 (`aqua:aquasecurity/trivy`)
+- **trivy**: 0.72.0 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
-- **mermaid-cli**: 11.15.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
+- **mermaid-cli**: 11.16.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
 - **PlantUML**: renders the C4 architecture diagrams (`docs/diagrams/*.puml`, pinned C4-PlantUML `v2.13.0` `!include`); Docker image `plantuml/plantuml`, `PLANTUML_VERSION` constant in Makefile with `# renovate:` annotation. Renovate `automerge:false` for this dep (its bump needs a manual `make diagrams` PNG regen the bot can't run)
 - **.NET SDK**: 10.0.301 (from `global.json`)
 
@@ -105,9 +106,9 @@ Three-layer pyramid — each layer covers a distinct surface and runs as its own
 | Integration | `tests/queue-processor.integration.tests/` | Testcontainers Redis + daprd; real `DaprClient` over HTTP/gRPC | `make integration-test` | `integration-test` |
 | E2E | `e2e/e2e-test.sh` | Full Docker Compose stack: app + daprd + Redis + Jaeger | `make e2e` | `e2e` |
 
-- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.56.25 with Microsoft Testing Platform
+- **Framework**: [TUnit](https://github.com/thomhurst/TUnit) 1.58.0 with Microsoft Testing Platform
 - **Mocking**: FakeItEasy 9.0.1 (per portfolio testing rule)
-- **Integration containers**: `Testcontainers` + `Testcontainers.Redis` 4.12
+- **Integration containers**: `Testcontainers` + `Testcontainers.Redis` 4.13.0
 - **Run discipline**: `dotnet run --project ...` (required for TUnit on .NET 10 SDK; MTP entry point)
 
 ## CI

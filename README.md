@@ -16,7 +16,7 @@
 | Messaging | Dapr pub/sub on Redis Streams |
 | State store | Dapr state on Redis |
 | Tracing | OpenTelemetry → Jaeger via `OpenTelemetry.Extensions.Hosting` 1.16 (OTLP gRPC) |
-| Unit / integration testing | TUnit 1.56 + `WebApplicationFactory` + Testcontainers 4.12 (Redis + daprd) |
+| Unit / integration testing | TUnit 1.58 + `WebApplicationFactory` + Testcontainers 4.13 (Redis + daprd) |
 | Mocking | FakeItEasy 9.0 |
 | E2E testing | Docker Compose + bash curl harness + Dapr publish API |
 | Container runtime | Docker Compose v2; production multi-stage `src/queue-processor/Dockerfile` (non-root `app:app`, BuildKit-ARG HEALTHCHECK) |
@@ -142,6 +142,7 @@ Run `make help` to see all targets.
 | `make mermaid-lint` | Validate Mermaid diagrams in Markdown files |
 | `make diagrams` | Render C4 PlantUML architecture diagrams to PNG |
 | `make diagrams-check` | Verify committed diagram PNGs match their `.puml` source (drift gate) |
+| `make diagrams-clean` | Remove rendered diagram artefacts |
 | `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts |
