@@ -1,0 +1,32 @@
+@startuml c4-context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.13.0/C4_Context.puml
+
+LAYOUT_LEFT_RIGHT()
+
+' Modern flat styling: no shadows, sharp corners, clean sans-serif, modern palette.
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundCorner 4
+skinparam defaultFontName "Inter, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 13
+skinparam ArrowColor #37474F
+skinparam ArrowThickness 1.2
+skinparam rectangleBorderThickness 1.3
+
+' NOTE (C4-PlantUML tag names): System_Ext() styles the `external_system` tag,
+' NOT `system_ext` (which silently no-ops). Person() -> `person`, System() -> `system`.
+UpdateElementStyle("person", $fontColor="#FFFFFF", $bgColor="#0F766E", $borderColor="#134E4A")
+UpdateElementStyle("system", $fontColor="#FFFFFF", $bgColor="#2563EB", $borderColor="#1E3A8A")
+UpdateElementStyle("external_system", $fontColor="#FFFFFF", $bgColor="#64748B", $borderColor="#334155")
+
+title System Context — QueueProcessor on Docker Compose
+
+Person(operator, "Operator", "curl / Make targets")
+System(qp, "QueueProcessor", "ASP.NET Core minimal API + Dapr sidecar; squares input and persists to a state store")
+System_Ext(jaeger, "Jaeger", "OpenTelemetry trace collector + UI")
+
+Rel(operator, qp, "HTTP", "GET / · POST /counter · publish via Dapr API")
+Rel(qp, jaeger, "Exports traces", "OTLP gRPC :4317")
+
+SHOW_LEGEND()
+@enduml

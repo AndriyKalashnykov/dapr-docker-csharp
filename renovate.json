@@ -143,6 +143,16 @@
         "docker"
       ],
       "pinDigests": false
+    },
+    {
+      "description": "PlantUML renderer image drives a committed-PNG regen (`make diagrams`) the hosted Renovate app cannot run, so its bump PR would fail the `diagrams-check` drift gate and never auto-merge (standing RED PR). Keep it Renovate-TRACKED (freshness/security) but disable automerge — a human runs `make diagrams` + commits the re-rendered PNGs on its bump PR.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "plantuml/plantuml"
+      ],
+      "automerge": false
     }
   ]
 }
