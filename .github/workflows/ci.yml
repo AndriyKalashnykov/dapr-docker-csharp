@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 2
     outputs:
       code: ${{ steps.filter.outputs.code }}
+      diagrams: ${{ steps.filter.outputs.diagrams }}
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -44,17 +45,45 @@ jobs:
               - 'Makefile'
               - 'docker-compose.yaml'
               - 'compose/**'
-              - 'docs/diagrams/**'
               - '.github/workflows/**'
               - 'CLAUDE.md'
+            # docs/diagrams/** is deliberately NOT in `code`: a diagram-only change
+            # must run static-check (mermaid-lint + the diagrams-check drift gate)
+            # but NOT the heavy build/test/integration-test/e2e/image-build jobs
+            # (a .puml/.png change exercises none of them). static-check gates on
+            # `code || diagrams`; the heavy jobs stay on `code` only.
+            diagrams:
+              - 'docs/diagrams/**'
 
   static-check:
     needs: [changes]
-    if: needs.changes.outputs.code == 'true' || startsWith(github.ref, 'refs/tags/v')
+    if: needs.changes.outputs.code == 'true' || needs.changes.outputs.diagrams == 'true' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # Cache the pinned lint/diagram Docker images (mermaid-cli + plantuml) so
+      # static-check (mermaid-lint + diagrams-check) does NOT anonymously pull from
+      # Docker Hub on every run — GitHub-hosted runners share egress IPs and can hit
+      # Docker Hub's anonymous pull limit (a known CI flake). Keyed on the pinned
+      # versions, so a Renovate bump invalidates the cache and re-pulls exactly once.
+      - name: Resolve pinned CI image versions
+        id: imgver
+        run: |
+          echo "mermaid=$(sed -n 's/^MERMAID_CLI_VERSION[[:space:]]*:=[[:space:]]*//p' Makefile)" >> "$GITHUB_OUTPUT"
+          echo "plantuml=$(sed -n 's/^PLANTUML_VERSION[[:space:]]*:=[[:space:]]*//p' Makefile)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached lint/diagram Docker images
+        id: img-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: /tmp/ci-images
+          key: ci-images-mermaid-${{ steps.imgver.outputs.mermaid }}-plantuml-${{ steps.imgver.outputs.plantuml }}
+
+      - name: Load cached Docker images
+        if: steps.img-cache.outputs.cache-hit == 'true'
+        run: for f in /tmp/ci-images/*.tar; do docker load -i "$f"; done
 
       - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
@@ -69,6 +98,15 @@ jobs:
 
       - name: Static check
         run: make static-check
+
+      # On a cache miss, `make static-check` just pulled the images — export them to
+      # the cached path so actions/cache's post-step persists them for the next run.
+      - name: Export Docker images for cache
+        if: steps.img-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/ci-images
+          docker save minlag/mermaid-cli:${{ steps.imgver.outputs.mermaid }} -o /tmp/ci-images/mermaid.tar
+          docker save plantuml/plantuml:${{ steps.imgver.outputs.plantuml }} -o /tmp/ci-images/plantuml.tar
 
   build:
     needs: [changes, static-check]
