@@ -209,3 +209,5 @@ Only the auto-provided `GITHUB_TOKEN` is used. No additional secrets are require
 A separate cleanup workflow (`.github/workflows/cleanup-runs.yml`) prunes old workflow runs (retains 7 days / minimum 5) and stale branch caches weekly.
 
 [Renovate](https://docs.renovatebot.com/) keeps dependencies up to date with PR automerge (squash strategy) enabled.
+
+<!-- ci-probe: verify README-only change runs mermaid-lint via static-check -->
