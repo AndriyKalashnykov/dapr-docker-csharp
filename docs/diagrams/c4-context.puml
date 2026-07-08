@@ -19,6 +19,7 @@ UpdateElementStyle("person", $fontColor="#FFFFFF", $bgColor="#0F766E", $borderCo
 UpdateElementStyle("system", $fontColor="#FFFFFF", $bgColor="#2563EB", $borderColor="#1E3A8A")
 UpdateElementStyle("external_system", $fontColor="#FFFFFF", $bgColor="#64748B", $borderColor="#334155")
 
+' probe: verify diagram-only CI path
 title System Context — QueueProcessor on Docker Compose
 
 Person(operator, "Operator", "curl / Make targets")
