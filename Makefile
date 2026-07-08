@@ -27,8 +27,8 @@ PLANTUML_VERSION := 1.2026.6
 # `act-latest-YYYYMMDD` snapshots alongside the floating tag).
 # `versioning=loose` because the suffix isn't semver — Renovate compares
 # tags lexicographically and a later date sorts higher.
-# renovate: datasource=docker depName=catthehacker/ubuntu versioning=loose
-ACT_UBUNTU_VERSION := act-latest-20260515
+# renovate: datasource=docker depName=catthehacker/ubuntu versioning=regex:^act-latest-(?<major>\d{4})(?<minor>\d{2})(?<patch>\d{2})$
+ACT_UBUNTU_VERSION := act-latest-20260629
 
 
 # === Project Paths ===
