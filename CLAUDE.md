@@ -117,8 +117,8 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 
 | Job | Depends on | Step |
 |-----|-----------|------|
-| **changes** | — | `dorny/paths-filter` short-circuits doc-only changes |
-| **static-check** | changes (code) | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
+| **changes** | — | `dorny/paths-filter` routes by path: `code` → all jobs; `diagrams`/`docs` (`docs/diagrams/**`, `README.md`) → `static-check` only (drift gate + mermaid-lint); unrelated files → skip |
+| **static-check** | changes (code/diagrams/docs) | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | **build** | static-check | `make build` |
 | **image-build** | static-check | `make image-build` (build-only Dockerfile validation, no push) |
 | **test** | static-check | `make test` (unit) |
