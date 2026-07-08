@@ -10,6 +10,13 @@ CURRENTTAG     := $(shell git describe --tags --abbrev=0 2>/dev/null || echo "de
 # renovate: datasource=docker depName=minlag/mermaid-cli
 MERMAID_CLI_VERSION := 11.16.0
 
+# PlantUML renderer for the C4 architecture diagrams (docs/diagrams/*.puml).
+# The bump PR drives a committed-PNG regen (`make diagrams`) the hosted Renovate
+# app cannot run, so renovate.json disables automerge for this dep (a human runs
+# `make diagrams` + commits the PNGs on its bump PR). See /architecture-diagrams.
+# renovate: datasource=docker depName=plantuml/plantuml
+PLANTUML_VERSION := 1.2026.6
+
 # act runner image. CI uses GitHub-hosted `ubuntu-latest`; act needs an
 # equivalent locally. Pin the DATED catthehacker tag (immutable, content-
 # addressable) — NOT the floating `act-latest` tag, which would let
@@ -146,8 +153,53 @@ mermaid-lint: deps
 	done; \
 	rm -rf "$$out"
 
-#static-check: @ Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint)
-static-check: lint vulncheck trivy-fs secrets mermaid-lint
+# === C4 architecture diagrams (PlantUML) ===
+DIAGRAM_DIR   := docs/diagrams
+DIAGRAM_SRC   := $(wildcard $(DIAGRAM_DIR)/*.puml)
+DIAGRAM_OUT   := $(patsubst $(DIAGRAM_DIR)/%.puml,$(DIAGRAM_DIR)/out/%.png,$(DIAGRAM_SRC))
+# Version-stamped sentinel: a PLANTUML_VERSION bump changes the stamp NAME, so the
+# old stamp no longer satisfies the prereq and every PNG re-renders — closes the
+# "renderer bumped but PNG not regenerated" blind spot of a bare source-only gate.
+DIAGRAM_STAMP := $(DIAGRAM_DIR)/out/.plantuml-$(PLANTUML_VERSION).stamp
+
+#diagrams: @ Render C4 PlantUML architecture diagrams to PNG
+diagrams: $(DIAGRAM_OUT)
+
+$(DIAGRAM_DIR)/out/%.png: $(DIAGRAM_DIR)/%.puml $(DIAGRAM_STAMP)
+	@docker image inspect plantuml/plantuml:$(PLANTUML_VERSION) >/dev/null 2>&1 \
+		|| docker pull -q plantuml/plantuml:$(PLANTUML_VERSION) >/dev/null
+	docker run --rm -v "$(CURDIR)/$(DIAGRAM_DIR):/work" -w /work \
+		--user $$(id -u):$$(id -g) \
+		-e HOME=/tmp -e _JAVA_OPTIONS=-Duser.home=/tmp \
+		plantuml/plantuml:$(PLANTUML_VERSION) \
+		-tpng -o out $(notdir $<)
+
+$(DIAGRAM_STAMP):
+	@mkdir -p $(DIAGRAM_DIR)/out
+	@rm -f $(DIAGRAM_DIR)/out/.plantuml-*.stamp
+	@touch $@
+
+#diagrams-clean: @ Remove rendered diagram artefacts
+diagrams-clean:
+	rm -rf $(DIAGRAM_DIR)/out
+
+#diagrams-check: @ Verify committed diagram PNGs match current .puml source (CI drift gate)
+diagrams-check: diagrams
+	@# Two-part predicate (NOT bare `git diff`): `git diff` catches an EDITED source
+	@# whose tracked PNG changed; `ls-files --others` catches a NEW source whose
+	@# freshly-rendered PNG is still untracked (git diff is blind to untracked files).
+	@# A staged render that matches fresh output is invisible to both -> GREEN
+	@# pre-commit (this gate runs inside static-check, which `make ci` runs before commit).
+	@git diff --exit-code -- $(DIAGRAM_DIR)/out >/dev/null 2>&1 \
+		|| { echo "ERROR: committed diagram PNG is stale — run 'make diagrams' and commit."; \
+		     git --no-pager diff --stat -- $(DIAGRAM_DIR)/out; exit 1; }
+	@U=$$(git ls-files --others --exclude-standard -- $(DIAGRAM_DIR)/out); \
+	[ -z "$$U" ] || { echo "ERROR: rendered diagram output not committed/staged:"; \
+		echo "$$U"; exit 1; }
+	@echo "diagrams-check: rendered output matches committed source."
+
+#static-check: @ Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check)
+static-check: lint vulncheck trivy-fs secrets mermaid-lint diagrams-check
 
 #format: @ Auto-fix code formatting
 format: deps
@@ -264,7 +316,8 @@ release:
 		echo "Done."'
 
 .PHONY: help deps deps-act clean build image-build test integration-test e2e \
-	lint vulncheck trivy-fs secrets mermaid-lint static-check format run ci ci-run \
+	lint vulncheck trivy-fs secrets mermaid-lint diagrams diagrams-clean diagrams-check \
+	static-check format run ci ci-run \
 	renovate-bootstrap renovate-validate \
 	start stop restart pull \
 	dapr-logs dapr-pub dapr-counter dapr-get \

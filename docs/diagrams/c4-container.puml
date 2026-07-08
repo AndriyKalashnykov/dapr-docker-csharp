@@ -1,0 +1,43 @@
+@startuml c4-container
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/v2.13.0/C4_Container.puml
+
+LAYOUT_LEFT_RIGHT()
+
+' Modern flat styling: no shadows, sharp corners, clean sans-serif, modern palette.
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam roundCorner 4
+skinparam defaultFontName "Inter, Helvetica, Arial, sans-serif"
+skinparam defaultFontSize 13
+skinparam ArrowColor #37474F
+skinparam ArrowThickness 1.2
+skinparam rectangleBorderThickness 1.3
+
+UpdateElementStyle("person", $fontColor="#FFFFFF", $bgColor="#0F766E", $borderColor="#134E4A")
+UpdateElementStyle("container", $fontColor="#FFFFFF", $bgColor="#2563EB", $borderColor="#1E3A8A")
+UpdateBoundaryStyle($bgColor="#F1F5F9", $borderColor="#94A3B8", $fontColor="#1E293B")
+
+' ContainerDb() shares the plain `container` tag (there is NO distinct DB tag in
+' C4-PlantUML), so a custom tag attached at the call site via $tags is the only
+' way to colour the datastore violet. `container_db` in UpdateElementStyle no-ops.
+AddElementTag("datastore", $fontColor="#FFFFFF", $bgColor="#7C3AED", $borderColor="#4C1D95")
+
+title Container View — QueueProcessor on Docker Compose
+
+Person(operator, "Operator")
+
+System_Boundary(compose, "docker compose") {
+  Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.18", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic 'counter'")
+  Container(daprd, "Dapr Sidecar", "daprd 1.18.1", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
+  ContainerDb(redis, "Redis", "redis:8", "State store · pub/sub broker (Redis Streams)", $tags="datastore")
+  Container(jaeger, "Jaeger", "jaegertracing/jaeger:2.19.0", "Trace collector + UI on :16686")
+}
+
+Rel(operator, app, "HTTP", "port 5000 (HOST_PORT override)")
+Rel(app, daprd, "HTTP / gRPC", "in-pod localhost")
+Rel(daprd, redis, "RESP", "SaveState/GetState · pub/sub publish/subscribe")
+Rel(app, jaeger, "Exports traces", "OTLP gRPC :4317")
+Rel(daprd, jaeger, "Exports traces", "OTLP gRPC :4317")
+
+SHOW_LEGEND()
+@enduml

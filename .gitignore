@@ -459,3 +459,7 @@ $RECYCLE.BIN/
 
 # Claude Code harness state
 .claude/
+
+# PlantUML render trigger (version-stamped sentinel; not a tracked artifact —
+# absent on a fresh CI checkout so `make diagrams` always does a clean render).
+docs/diagrams/out/.plantuml-*.stamp

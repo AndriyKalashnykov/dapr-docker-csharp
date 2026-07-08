@@ -30,7 +30,9 @@ Dapr .NET demo application -- a queue processor using Dapr pub/sub with Redis, r
 | `make trivy-fs` | Trivy filesystem scan (vulns + misconfigs) |
 | `make secrets` | Scan tree + git history for committed secrets (gitleaks) |
 | `make mermaid-lint` | Validate Mermaid diagrams in Markdown |
-| `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
+| `make diagrams` | Render C4 PlantUML architecture diagrams (`docs/diagrams/*.puml`) to PNG |
+| `make diagrams-check` | Drift gate: committed PNGs must match current `.puml` source (in `static-check`) |
+| `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts (bin/obj) |
 | `make run` | Run application locally |
@@ -90,6 +92,7 @@ Pinned in `.mise.toml` and Renovate-tracked:
 - **trivy**: 0.71.2 (`aqua:aquasecurity/trivy`)
 - **gitleaks**: 8.30.1 (`aqua:gitleaks/gitleaks`)
 - **mermaid-cli**: 11.15.0 (Docker image `minlag/mermaid-cli`, version constant in Makefile with `# renovate:` annotation)
+- **PlantUML**: renders the C4 architecture diagrams (`docs/diagrams/*.puml`, pinned C4-PlantUML `v2.13.0` `!include`); Docker image `plantuml/plantuml`, `PLANTUML_VERSION` constant in Makefile with `# renovate:` annotation. Renovate `automerge:false` for this dep (its bump needs a manual `make diagrams` PNG regen the bot can't run)
 - **.NET SDK**: 10.0.301 (from `global.json`)
 
 ## Testing
@@ -114,7 +117,7 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push to main, tags 
 | Job | Depends on | Step |
 |-----|-----------|------|
 | **changes** | — | `dorny/paths-filter` short-circuits doc-only changes |
-| **static-check** | changes (code) | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
+| **static-check** | changes (code) | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | **build** | static-check | `make build` |
 | **image-build** | static-check | `make image-build` (build-only Dockerfile validation, no push) |
 | **test** | static-check | `make test` (unit) |
@@ -160,7 +163,7 @@ Use the following skills when working on related files:
 | `renovate.json` | `/renovate` |
 | `README.md` | `/readme` |
 | `.github/workflows/*.{yml,yaml}` | `/ci-workflow` |
-| Mermaid blocks in `*.md` | `/architecture-diagrams` |
+| Mermaid blocks in `*.md`, `docs/diagrams/*.puml` | `/architecture-diagrams` |
 | `tests/**/*.cs`, `e2e/**` | `/test-coverage-analysis`; TUnit + FakeItEasy per `~/.claude/rules/dotnet/testing.md` |
 
 When spawning subagents, always pass conventions from the respective skill into the agent's prompt.

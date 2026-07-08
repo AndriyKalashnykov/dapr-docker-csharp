@@ -5,7 +5,7 @@
 
 # Production-Pattern C# Microservice on Dapr + Docker Compose
 
-**Runtime surface:** ASP.NET Core minimal-API subscriber wired to a Dapr sidecar (`Dapr.AspNetCore`) for pub/sub on Redis Streams via `MapSubscribeHandler` + CloudEvents and Dapr state on Redis, with `OpenTelemetry.Extensions.Hosting` exporting OTLP traces to Jaeger and an `AddHealthChecks()`-backed `/healthz` endpoint probed by both the Dockerfile HEALTHCHECK and a compose-level healthcheck. **Delivery surface:** three-layer test pyramid (TUnit + FakeItEasy unit · TUnit + Testcontainers Redis+daprd integration · bash/curl e2e through Docker Compose covering pub/sub roundtrip and Jaeger trace ingestion), composite `make static-check` (`dotnet format --verify-no-changes` · `-warnaserror` · NuGet `--vulnerable` audit · Trivy filesystem scan · gitleaks · `minlag/mermaid-cli` C4 diagram lint), multi-stage production Dockerfile (non-root `app:app`, BuildKit-ARG-tunable HEALTHCHECK), GitHub Actions CI with `dorny/paths-filter` changes detector + `ci-pass` aggregator + `jdx/mise-action` toolchain bootstrap, `.env.example`-driven parameter externalization, mise-pinned auxiliary toolchain (Node, pnpm, jq, act, trivy, gitleaks), and Renovate-managed deps with `automergeType: pr` covering NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex (Makefile + C# annotations).
+**Runtime surface:** ASP.NET Core minimal-API subscriber wired to a Dapr sidecar (`Dapr.AspNetCore`) for pub/sub on Redis Streams via `MapSubscribeHandler` + CloudEvents and Dapr state on Redis, with `OpenTelemetry.Extensions.Hosting` exporting OTLP traces to Jaeger and an `AddHealthChecks()`-backed `/healthz` endpoint probed by both the Dockerfile HEALTHCHECK and a compose-level healthcheck. **Delivery surface:** three-layer test pyramid (TUnit + FakeItEasy unit · TUnit + Testcontainers Redis+daprd integration · bash/curl e2e through Docker Compose covering pub/sub roundtrip and Jaeger trace ingestion), composite `make static-check` (`dotnet format --verify-no-changes` · `-warnaserror` · NuGet `--vulnerable` audit · Trivy filesystem scan · gitleaks · `minlag/mermaid-cli` Mermaid lint · `plantuml/plantuml` C4-diagram render drift gate), multi-stage production Dockerfile (non-root `app:app`, BuildKit-ARG-tunable HEALTHCHECK), GitHub Actions CI with `dorny/paths-filter` changes detector + `ci-pass` aggregator + `jdx/mise-action` toolchain bootstrap, `.env.example`-driven parameter externalization, mise-pinned auxiliary toolchain (Node, pnpm, jq, act, trivy, gitleaks), and Renovate-managed deps with `automergeType: pr` covering NuGet + Dockerfile + docker-compose + GitHub Actions + mise + custom-regex (Makefile + C# annotations).
 
 ## Tech Stack
 
@@ -54,31 +54,15 @@ make deps
 
 ## Architecture
 
-```mermaid
-C4Context
-    title System Context — Dapr on Docker Compose
-    Person(operator, "Operator", "curl / Make targets")
-    System(qp, "QueueProcessor", "ASP.NET Core minimal API + Dapr sidecar; squares input and persists to state store")
-    System_Ext(jaeger, "Jaeger", "OTel trace collector + UI")
-    Rel(operator, qp, "HTTP", "GET / · POST /counter · publish via Dapr API")
-    Rel(qp, jaeger, "OTLP gRPC :4317", "exports traces via OpenTelemetry.Exporter.OpenTelemetryProtocol")
-```
+### System Context
 
-```mermaid
-C4Container
-    title Container Diagram — QueueProcessor on Docker Compose
-    Person(operator, "Operator")
-    System_Boundary(compose, "docker compose") {
-        Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.18", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic counter")
-        Container(daprd, "Dapr Sidecar", "daprd 1.18.1", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
-        ContainerDb(redis, "Redis", "redis:8", "State store · pub/sub broker (Redis Streams)")
-        Container(jaeger, "Jaeger", "jaegertracing/jaeger:2.19.0", "Trace collector + UI on :16686")
-    }
-    Rel(operator, app, "HTTP", "port 5000 (or HOST_PORT override)")
-    Rel(app, daprd, "HTTP / gRPC", "in-pod localhost")
-    Rel(daprd, redis, "RESP", "state SaveState/GetState · pubsub publish/subscribe")
-    Rel(daprd, jaeger, "OTLP gRPC :4317", "trace export")
-```
+<p align="center"><img src="docs/diagrams/out/c4-context.png" alt="System Context — QueueProcessor on Docker Compose" width="960"></p>
+
+An operator drives the system over HTTP — direct `POST /counter` and `GET /`, plus publishes through the Dapr publish API. Both the QueueProcessor and its Dapr sidecar export OpenTelemetry traces to Jaeger.
+
+### Container View
+
+<p align="center"><img src="docs/diagrams/out/c4-container.png" alt="Container View — QueueProcessor on Docker Compose" width="820"></p>
 
 Component highlights:
 
@@ -87,6 +71,33 @@ Component highlights:
 - **Redis** — single broker handling both pub/sub backbone and state-store backing.
 - **Jaeger** — OTLP trace collector reachable on the `dapr-demo-network`. Both the .NET app and the Dapr sidecar export to `jaeger:4317`. UI at `http://localhost:16686`.
 
+### Message Flow — pub/sub roundtrip
+
+`POST /counter` is served two ways by the **same handler**: a direct HTTP call, and a Dapr pub/sub subscription (`WithTopic("pubsub", "counter")`). Publishing through the Dapr API drives the async path below; a subsequent `GET /` reads the squared value back from the state store.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Op as Operator
+  participant D as Dapr Sidecar (daprd)
+  participant A as QueueProcessor
+  participant R as Redis (Streams)
+  Note over Op,R: Async path — publish via the Dapr API
+  Op->>D: POST /v1.0/publish/pubsub/counter {value}
+  D->>R: XADD stream "counter"
+  D->>A: POST /counter (CloudEvent, WithTopic subscription)
+  A->>A: square(value)
+  A->>D: SaveState(statestore, "counter")
+  D->>R: persist state key
+  A-->>D: 202 Accepted
+  Note over Op,R: Read the squared value back
+  Op->>A: GET / (host port 5000)
+  A->>D: GetState(statestore, "counter")
+  D->>R: read state key
+  R-->>A: squared value
+  A-->>Op: 200 squared value
+```
+
 Docker Compose files:
 
 - `docker-compose.yaml` — app service (dev SDK image + `dotnet watch`), Redis, compose-level `healthcheck:` against `/healthz` (host port via `HOST_PORT`, defaults to 5000)
@@ -94,6 +105,8 @@ Docker Compose files:
 - `e2e/docker-compose.e2e.override.yaml` — strips internal-only host port bindings for parallel-safe e2e
 
 Production deployments build the image from `src/queue-processor/Dockerfile` (multi-stage; runtime image is `mcr.microsoft.com/dotnet/aspnet:10.0` with a non-root `app:app` user and a `HEALTHCHECK` directive against `/healthz`). Build with `make image-build`.
+
+Diagram sources live in `docs/diagrams/` — C4 diagrams as PlantUML (`c4-context.puml`, `c4-container.puml`), the message flow as inline Mermaid above. Regenerate the PlantUML PNGs with `make diagrams`; `make diagrams-check` (wired into `make static-check`) fails CI if a committed PNG drifts from its source.
 
 ## Environment Configuration
 
@@ -127,7 +140,9 @@ Run `make help` to see all targets.
 | `make trivy-fs` | Trivy filesystem scan (vulns + misconfigs, HIGH/CRITICAL) |
 | `make secrets` | Scan working tree + git history for committed secrets (gitleaks) |
 | `make mermaid-lint` | Validate Mermaid diagrams in Markdown files |
-| `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
+| `make diagrams` | Render C4 PlantUML architecture diagrams to PNG |
+| `make diagrams-check` | Verify committed diagram PNGs match their `.puml` source (drift gate) |
+| `make static-check` | Composite quality gate (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | `make format` | Auto-fix code formatting |
 | `make clean` | Remove build artifacts |
 | `make run` | Run the application locally |
@@ -178,7 +193,7 @@ GitHub Actions runs on every push to `main`, tags `v*`, pull requests, `workflow
 | Job | Triggers | Steps |
 |-----|----------|-------|
 | **changes** | every run | `dorny/paths-filter` short-circuits doc-only changes |
-| **static-check** | code change or tag push | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint) |
+| **static-check** | code change or tag push | `make static-check` (lint + vulncheck + trivy-fs + secrets + mermaid-lint + diagrams-check) |
 | **build** | after static-check | `make build` |
 | **image-build** | after static-check | `make image-build` (build-only Dockerfile validation, no push) |
 | **test** | after static-check | `make test` (unit) |
