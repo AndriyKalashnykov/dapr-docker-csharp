@@ -181,7 +181,7 @@ $(DIAGRAM_DIR)/out/%.png: $(DIAGRAM_DIR)/%.puml $(DIAGRAM_STAMP)
 		|| docker pull -q plantuml/plantuml:$(PLANTUML_VERSION) >/dev/null
 	@docker run --rm -v "$(CURDIR)/$(DIAGRAM_DIR):/work" -w /work \
 		--user $$(id -u):$$(id -g) \
-		-e HOME=/tmp -e _JAVA_OPTIONS=-Duser.home=/tmp \
+		-e JAVA_TOOL_OPTIONS=-Duser.home=/tmp \
 		plantuml/plantuml:$(PLANTUML_VERSION) \
 		-tpng -o out $(notdir $<)
 
