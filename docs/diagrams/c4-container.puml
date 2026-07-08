@@ -22,22 +22,22 @@ UpdateBoundaryStyle($bgColor="#F1F5F9", $borderColor="#94A3B8", $fontColor="#1E2
 ' way to colour the datastore violet. `container_db` in UpdateElementStyle no-ops.
 AddElementTag("datastore", $fontColor="#FFFFFF", $bgColor="#7C3AED", $borderColor="#4C1D95")
 
-title Container View — QueueProcessor on Docker Compose
+title Container Diagram — QueueProcessor on Docker Compose
 
-Person(operator, "Operator")
+Person(operator, "Operator", "Publishes messages and inspects processed state")
 
-System_Boundary(compose, "docker compose") {
-  Container(app, "QueueProcessor", "C# / .NET 10, ASP.NET Core, Dapr.AspNetCore 1.18", "GET / state · POST /counter (squares input) · pub/sub subscriber on topic 'counter'")
-  Container(daprd, "Dapr Sidecar", "daprd 1.18.1", "Pub/sub + state-store proxy; HTTP :3500, gRPC :50001")
-  ContainerDb(redis, "Redis", "redis:8", "State store · pub/sub broker (Redis Streams)", $tags="datastore")
-  Container(jaeger, "Jaeger", "jaegertracing/jaeger:2.19.0", "Trace collector + UI on :16686")
+System_Boundary(compose, "Docker Compose Stack") {
+  Container(app, "QueueProcessor", "C# / .NET 10 · ASP.NET Core · Dapr.AspNetCore 1.18", "Exposes the counter API (GET state, POST /counter) and subscribes to the 'counter' pub/sub topic")
+  Container(daprd, "Dapr Sidecar", "daprd 1.18.1", "Provides the pub/sub and state-store building blocks · HTTP 3500 · gRPC 50001")
+  ContainerDb(redis, "Redis", "redis:8", "Backs the state store and the pub/sub broker (Redis Streams)", $tags="datastore")
+  Container(jaeger, "Jaeger", "jaegertracing/jaeger 2.19.0", "Collects OpenTelemetry traces · UI on port 16686")
 }
 
-Rel(operator, app, "HTTP", "port 5000 (HOST_PORT override)")
-Rel(app, daprd, "HTTP / gRPC", "in-pod localhost")
-Rel(daprd, redis, "RESP", "SaveState/GetState · pub/sub publish/subscribe")
-Rel(app, jaeger, "Exports traces", "OTLP gRPC :4317")
-Rel(daprd, jaeger, "Exports traces", "OTLP gRPC :4317")
+Rel(operator, app, "Sends requests to", "HTTP · port 5000")
+Rel(app, daprd, "Invokes building blocks via", "HTTP / gRPC · shared loopback")
+Rel(daprd, redis, "Persists and streams data over", "RESP")
+Rel(app, jaeger, "Exports traces to", "OTLP / gRPC · port 4317")
+Rel(daprd, jaeger, "Exports traces to", "OTLP / gRPC · port 4317")
 
 SHOW_LEGEND()
 @enduml
