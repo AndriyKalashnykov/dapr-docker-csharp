@@ -11,7 +11,7 @@ namespace QueueProcessor.IntegrationTests;
 public sealed class DaprStateStoreFixture : IAsyncInitializer, IAsyncDisposable
 {
     // renovate: datasource=docker depName=daprio/daprd
-    private const string DaprdImage = "daprio/daprd:1.18.1";
+    private const string DaprdImage = "daprio/daprd:1.18.2";
     // renovate: datasource=docker depName=redis
     private const string RedisImage = "redis:8-alpine";
 
